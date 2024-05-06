@@ -13,37 +13,10 @@ class RunList(Static):
 
     def __init__(self):
         super().__init__()
-        # Possible values supplyChain, created, ready
-        self.sort_by = "supplychain"
-        self.sort_asc = True
 
     BINDINGS = [
-        Binding("alt+s", "sort_by_supplychain", "Sort by Supply Chains", show=True),
-        Binding("alt+t", "sort_by_time", "Sort by Time", show=True),
-        Binding("alt+u", "sort_by_status", "Sort by Status", show=True),
-        Binding("alt+d", "asc_desc", "ASC/DESC", show=True),
         Binding("ctrl+c", "app.quit", "Quit"),
     ]
-
-    def action_asc_desc(self) -> None:
-        self.sort_asc = not self.sort_asc
-        table = self.query_one(DataTable)
-        table.sort(reverse=self.sort_asc)
-
-    def action_sort_by_supplychain(self) -> None:
-        self.sort_by = "supplychain"
-        table = self.query_one(DataTable)
-        table.sort(self.sort_by, key=lambda supplychain: supplychain.plain, reverse=self.sort_asc)
-
-    def action_sort_by_time(self) -> None:
-        self.sort_by = "created"
-        table = self.query_one(DataTable)
-        table.sort(self.sort_by, key=lambda created: created.plain, reverse=self.sort_asc)
-
-    def action_sort_by_status(self) -> None:
-        self.sort_by = "ready"
-        table = self.query_one(DataTable)
-        table.sort(self.sort_by, key=lambda ready: ready.plain, reverse=self.sort_asc)
 
     def compose(self) -> ComposeResult:
         yield DataTable(id="runDataTable")
