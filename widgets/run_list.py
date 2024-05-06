@@ -1,5 +1,7 @@
 from textual.app import ComposeResult
-from textual.widgets import Static, Input, Button, DataTable, Label
+from textual.binding import Binding
+from textual.reactive import Reactive
+from textual.widgets import Static, DataTable
 from k8s.k8s import KubectlCmd
 from rich.text import Text
 
@@ -7,33 +9,66 @@ from rich.text import Text
 class RunList(Static):
     """Run list"""
 
+    run_data = Reactive(list())
+
     def __init__(self):
         super().__init__()
-        self.failed = False
-        self.latest_in_workload = True
-        self.run_data = list()
+        # Possible values supplyChain, created, ready
+        self.sort_by = "supplychain"
+        self.sort_asc = True
+
+    BINDINGS = [
+        Binding("alt+s", "sort_by_supplychain", "Sort by Supply Chains", show=True),
+        Binding("alt+t", "sort_by_time", "Sort by Time", show=True),
+        Binding("alt+u", "sort_by_status", "Sort by Status", show=True),
+        Binding("alt+d", "asc_desc", "ASC/DESC", show=True),
+        Binding("ctrl+c", "app.quit", "Quit"),
+    ]
+
+    def action_asc_desc(self) -> None:
+        self.sort_asc = not self.sort_asc
+        table = self.query_one(DataTable)
+        table.sort(reverse=self.sort_asc)
+
+    def action_sort_by_supplychain(self) -> None:
+        self.sort_by = "supplychain"
+        table = self.query_one(DataTable)
+        table.sort(self.sort_by, key=lambda supplychain: supplychain.plain, reverse=self.sort_asc)
+
+    def action_sort_by_time(self) -> None:
+        self.sort_by = "created"
+        table = self.query_one(DataTable)
+        table.sort(self.sort_by, key=lambda created: created.plain, reverse=self.sort_asc)
+
+    def action_sort_by_status(self) -> None:
+        self.sort_by = "ready"
+        table = self.query_one(DataTable)
+        table.sort(self.sort_by, key=lambda ready: ready.plain, reverse=self.sort_asc)
 
     def compose(self) -> ComposeResult:
-        # yield Input(placeholder="Search Run", id="runSearchInput")
-        # yield Button("Reset", id="resetButton")
         yield DataTable(id="runDataTable")
 
     def on_mount(self) -> None:
         table = self.query_one(DataTable)
         table.cursor_type = "row"
         table.zebra_stripes = True
-        self.run_data = KubectlCmd.get_run_list()
         run_list = (
-            "Namespace",
-            "Supply Chain",
-            "Run",
-            "Ready",
-            "Created",
-            "Progress",
+            "namespace",
+            "supplychain",
+            "run",
+            "ready",
+            "created",
+            "progress",
         )
-
         table.add_columns(*run_list)
+        self.set_interval(10 / 60, self.update_run_data)
 
+    def update_run_data(self):
+        self.run_data = KubectlCmd.get_run_list()
+
+    def watch_run_data(self):
+        table = self.query_one(DataTable)
+        table.clear()
         for run in self.run_data:
             styled_row = list()
             styled_row.append(
@@ -132,3 +167,4 @@ class RunList(Static):
 
             styled_row.append(progress_line)
             table.add_row(*styled_row)
+
