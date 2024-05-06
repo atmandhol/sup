@@ -99,10 +99,36 @@ class RunList(Static):
                     style="#ffffff",
                 )
             )
-            styled_row.append(
-                Text(
-                    "84%",
-                    style="#ffffff",
-                )
-            )
+
+            progress_line = Text(str(""))
+
+            for stage in run.get("status").get("workloadRun").get("spec").get("stages"):
+                for resumption in stage.get("resumptions", []):
+                    if (
+                        resumption.get("passed", None)
+                        and resumption.get("passed", None) is True
+                    ):
+                        progress_line += Text("✓", style="bold #22c91c")
+                    elif (
+                        resumption.get("passed", None)
+                        and resumption.get("passed", None) is False
+                    ):
+                        progress_line += Text("X", style="bold #c91c28")
+                    else:
+                        progress_line += Text("-", style="bold #ffffff")
+                pipeline = stage.get("pipeline", {})
+                if (
+                    pipeline.get("passed", None) is not None
+                    and pipeline.get("passed", None) is True
+                ):
+                    progress_line += Text("✓", style="bold #22c91c")
+                elif (
+                    pipeline.get("passed", None) is not None
+                    and pipeline.get("passed", None) is False
+                ):
+                    progress_line += Text("X", style="bold #c91c28")
+                else:
+                    progress_line += Text("-", style="bold #ffffff")
+
+            styled_row.append(progress_line)
             table.add_row(*styled_row)
