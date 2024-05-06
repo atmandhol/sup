@@ -59,24 +59,31 @@ class RunList(Static):
             "ready",
             "created",
             "progress",
+            "message"
         )
         table.add_columns(*run_list)
-        self.set_interval(10 / 60, self.update_run_data)
+        self.set_interval(10, self.update_run_data)
+        self.update_run_data()
 
     def update_run_data(self):
         self.run_data = KubectlCmd.get_run_list()
 
     def watch_run_data(self):
         table = self.query_one(DataTable)
+        current_pos = table.cursor_row
         table.clear()
         for run in self.run_data:
             styled_row = list()
+
+            # Namespace
             styled_row.append(
                 Text(
                     str(run.get("metadata").get("namespace")),
                     style="#96999e",
                 )
             )
+
+            # Supply chain
             styled_row.append(
                 Text(
                     str(
@@ -87,6 +94,8 @@ class RunList(Static):
                     style="italic #ffffff",
                 )
             )
+
+            # Name
             styled_row.append(
                 Text(
                     str(
@@ -94,15 +103,16 @@ class RunList(Static):
                         .get("labels")
                         .get("supply-chain.apps.tanzu.vmware.com/workload-name")
                     ),
-                    style="italic #ffba61",
+                    style="#dbce0d",
                 )
                 + "/"
                 + Text(
                     str(run.get("metadata").get("name")),
-                    style="#ffffff",
+                    style="italic #ffffff",
                 ),
             )
 
+            # Status
             ready = str(run.get("status").get("conditions")[1].get("reason"))
             if ready == "Succeeded":
                 styled_row.append(
@@ -120,6 +130,14 @@ class RunList(Static):
                         justify="right",
                     )
                 )
+            elif ready == "PlatformFailed":
+                styled_row.append(
+                    Text(
+                        ready,
+                        style="italic #fc9847",
+                        justify="right",
+                    )
+                )
             else:
                 styled_row.append(
                     Text(
@@ -128,6 +146,8 @@ class RunList(Static):
                         justify="right",
                     )
                 )
+
+            # Timestamp
             styled_row.append(
                 Text(
                     str(run.get("metadata").get("creationTimestamp")),
@@ -135,6 +155,7 @@ class RunList(Static):
                 )
             )
 
+            # Progress
             progress_line = Text(str(""))
 
             for stage in run.get("status").get("workloadRun").get("spec").get("stages"):
@@ -166,5 +187,14 @@ class RunList(Static):
                     progress_line += Text("-", style="bold #ffffff")
 
             styled_row.append(progress_line)
-            table.add_row(*styled_row)
 
+            # Message
+            styled_row.append(
+                Text(
+                    str(run.get("status").get("conditions")[1].get("message").split(".")[0]),
+                    style="#ffffff",
+                )
+            )
+
+            table.add_row(*styled_row)
+            table.move_cursor(row=current_pos)
