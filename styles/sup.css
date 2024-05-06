@@ -1,0 +1,24 @@
+RunList {
+    layout: grid;
+    min-width: 50;
+    padding: 1;
+}
+
+RunList DataTable {
+    row-span: 9;
+    column-span: 10;
+    margin: 1 1 1 1;
+    height: 100%
+}
+
+RunList Input {
+    row-span: 1;
+    column-span: 9;
+}
+
+RunList Button {
+    row-span: 1;
+    column-span: 1;
+    width: 100%;
+    margin: 0 1 0 1;
+}
