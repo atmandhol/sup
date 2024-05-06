@@ -15,6 +15,7 @@ class RunList(Static):
 
     def __init__(self):
         super().__init__()
+        self.refresh_time_in_sec = 30
 
     BINDINGS = [
         Binding("ctrl+c", "app.quit", "Quit"),
@@ -36,10 +37,10 @@ class RunList(Static):
             "ready",
             "created",
             "progress",
-            "message"
+            "message",
         )
         table.add_columns(*run_list)
-        self.set_interval(30, self.update_run_data)
+        self.set_interval(self.refresh_time_in_sec, self.update_run_data)
         self.update_run_data()
 
     def on_input_changed(self, input):
@@ -56,7 +57,15 @@ class RunList(Static):
         current_pos = table.cursor_row
         table.clear()
         for run in self.run_data:
-            if self.filter_string and self.filter_string not in (str(run.get("metadata").get("labels").get("supply-chain.apps.tanzu.vmware.com/workload-name")) + "/" + str(run.get("metadata").get("name"))):
+            if self.filter_string and self.filter_string not in (
+                str(
+                    run.get("metadata")
+                    .get("labels")
+                    .get("supply-chain.apps.tanzu.vmware.com/workload-name")
+                )
+                + "/"
+                + str(run.get("metadata").get("name"))
+            ):
                 continue
 
             styled_row = list()
@@ -177,7 +186,12 @@ class RunList(Static):
             # Message
             styled_row.append(
                 Text(
-                    str(run.get("status").get("conditions")[1].get("message").split(".")[0]),
+                    str(
+                        run.get("status")
+                        .get("conditions")[1]
+                        .get("message")
+                        .split(".")[0]
+                    ),
                     style="#ffffff",
                 )
             )
