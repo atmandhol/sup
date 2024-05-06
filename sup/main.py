@@ -10,7 +10,7 @@ class Sup(App):
 
     TITLE = "Sup - Interactive CLI for Tanzu Supply Chain"
 
-    CSS_PATH = "../styles/sup.css"
+    CSS_PATH = "styles/sup.css"
 
     def compose(self) -> ComposeResult:
         """Create child widgets for the app."""

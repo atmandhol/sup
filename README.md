@@ -27,7 +27,7 @@ pipx reinstall sup
 
 ![sup](images/home.png)
 
-## Setup for Local build
+## Setup for Local
 
 * Install `poetry` on the system level using 
 ```
@@ -37,6 +37,11 @@ pip3 install poetry
 ```
 mkvirtualenv sup -p python3
 poetry install
+```
+
+* Run locally
+```
+textual run sup/main.py
 ```
 
 ### Build

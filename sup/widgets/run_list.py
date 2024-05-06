@@ -3,7 +3,7 @@ from textual.binding import Binding
 from textual.containers import Vertical
 from textual.reactive import Reactive
 from textual.widgets import Static, DataTable, Input
-from k8s.k8s import KubectlCmd
+from sup.k8s.k8s import KubectlCmd
 from rich.text import Text
 
 
