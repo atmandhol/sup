@@ -16,3 +16,8 @@ class KubectlCmd:
     def get_run_list():
         _, out, _ = KubectlCmd.run("get all-runs -A -ojson")
         return json.loads(out).get("items")
+
+    @staticmethod
+    def get_run_detail(run: str, namespace: str):
+        _, out, _ = KubectlCmd.run(f"get {run} -n {namespace} -ojson")
+        return json.loads(out)

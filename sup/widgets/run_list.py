@@ -3,11 +3,8 @@ from textual.binding import Binding
 from textual.containers import Vertical
 from textual.reactive import Reactive
 from textual.widgets import Static, DataTable, Input
-
 from sup.k8s.k8s import KubectlCmd
 from rich.text import Text
-from datetime import datetime
-
 from sup.screens.run_details import RunDetail
 
 
@@ -69,8 +66,9 @@ class RunList(Static):
                 + "run/"
                 + str(data_table.get_row_at(widget.cursor_row)[2].plain).split("/")[1]
             )
+            ns = str(data_table.get_row_at(widget.cursor_row)[0].plain)
             # self.notify(run_name)
-            self.app.push_screen(RunDetail(run=run_name))
+            self.app.push_screen(RunDetail(run=run_name, namespace=ns))
 
     # noinspection PyBroadException
     def update_run_data(self):
