@@ -1,3 +1,4 @@
+import emoji
 from rich.text import Text
 from textual.app import ComposeResult
 from textual.containers import Horizontal
@@ -42,7 +43,30 @@ class RunDetail(Screen):
         self.update_run_details()
 
     def populate_stage_tree(self):
-        pass
+        # noinspection PyTypeChecker
+        tree: Tree = self.query_one("#stagesTree")
+        tree.clear()
+        stages_node = tree.root
+        stages_node.expand()
+        for stage in (
+            self.run_details.get("status").get("workloadRun").get("spec").get("stages")
+        ):
+            if not stage.get("pipeline"):
+                ej = emoji.emojize(":white_circle: ")
+            elif (
+                stage.get("pipeline").get("started")
+                and not stage.get("pipeline").get("completed")
+            ):
+                ej = emoji.emojize(":blue_circle: ")
+            elif (
+                stage.get("pipeline").get("passed")
+                and stage.get("pipeline").get("passed") == True
+            ):
+                ej = emoji.emojize(":green_circle: ")
+            else:
+                ej = emoji.emojize(":red_circle: ")
+
+            stages_node.add_leaf(ej + stage.get("name"), stage)
 
     def populate_top_bar(self):
         self.query_one("#runLabel").renderable = (
@@ -113,4 +137,5 @@ class RunDetail(Screen):
     def watch_run_details(self):
         # Do something when the run data changes
         self.populate_top_bar()
+        self.populate_stage_tree()
         pass
