@@ -21,10 +21,16 @@ class RunList(Static):
     BINDINGS = [
         Binding("ctrl+c", "app.quit", "Quit"),
         Binding("s", "search_run", "Search Run"),
+        Binding("escape", "clear_filter", "Clear Filter"),
     ]
 
     def action_search_run(self):
         search_bar = self.query_one(Input)
+        search_bar.focus()
+
+    def action_clear_filter(self):
+        search_bar = self.query_one("#filterInput")
+        search_bar.value = ""
         search_bar.focus()
 
     def compose(self) -> ComposeResult:
