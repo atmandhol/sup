@@ -1,13 +1,14 @@
-from textual import events
 from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import Vertical
 from textual.reactive import Reactive
-from textual.widget import Widget
 from textual.widgets import Static, DataTable, Input
+
 from sup.k8s.k8s import KubectlCmd
 from rich.text import Text
 from datetime import datetime
+
+from sup.screens.run_details import RunDetail
 
 
 class RunList(Static):
@@ -58,13 +59,27 @@ class RunList(Static):
     # noinspection PyShadowingBuiltins
     def on_input_submitted(self, widget):
         if widget.input.id == "filterInput":
-            table = self.query_one(DataTable).focus()
+            self.query_one(DataTable).focus()
+
+    def on_data_table_row_selected(self, widget):
+        data_table: DataTable = widget.data_table
+        if data_table.id == "runDataTable":
+            run_name = (
+                str(data_table.get_row_at(widget.cursor_row)[1].plain)
+                + "run/"
+                + str(data_table.get_row_at(widget.cursor_row)[2].plain).split("/")[1]
+            )
+            # self.notify(run_name)
+            self.app.push_screen(RunDetail(run=run_name))
 
     # noinspection PyBroadException
     def update_run_data(self):
         try:
             self.run_data = KubectlCmd.get_run_list()
-            self.notify(f"Run Data updated at {datetime.now()}", timeout=self.refresh_time_in_sec)
+            # self.notify(
+            #     f"Run Data updated at {datetime.now()}",
+            #     timeout=self.refresh_time_in_sec,
+            # )
         except Exception:
             self.notify(
                 "Sup was unable to get Run data from the cluster. Make sure the cluster is accessible and the kubeconfig is valid.",
