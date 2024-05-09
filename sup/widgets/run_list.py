@@ -5,6 +5,7 @@ from textual.reactive import Reactive
 from textual.widgets import Static, DataTable, Input
 from sup.k8s.k8s import KubectlCmd
 from rich.text import Text
+from datetime import datetime
 
 
 class RunList(Static):
@@ -46,8 +47,18 @@ class RunList(Static):
     def on_input_changed(self, input):
         self.filter_string = input.value
 
+    # noinspection PyBroadException
     def update_run_data(self):
-        self.run_data = KubectlCmd.get_run_list()
+        try:
+            self.run_data = KubectlCmd.get_run_list()
+            self.notify(f"Run Data updated at {datetime.now()}", timeout=self.refresh_time_in_sec)
+        except Exception:
+            self.notify(
+                "Sup was unable to get Run data from the cluster. Make sure the cluster is accessible and the kubeconfig is valid.",
+                title="Refresh Error",
+                severity="error",
+                timeout=self.refresh_time_in_sec,
+            )
 
     def watch_filter_string(self):
         self.watch_run_data()
@@ -55,6 +66,7 @@ class RunList(Static):
     def watch_run_data(self):
         table = self.query_one(DataTable)
         current_pos = table.cursor_row
+        y_pos = table.scroll_y
         table.clear()
         for run in self.run_data:
             if self.filter_string and self.filter_string not in (
@@ -198,3 +210,4 @@ class RunList(Static):
 
             table.add_row(*styled_row)
             table.move_cursor(row=current_pos)
+            table.scroll_target_y = y_pos
