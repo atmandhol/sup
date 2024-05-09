@@ -140,6 +140,34 @@ class RunDetail(Screen):
                         else "Stage did not run/finish",
                     )
                 )
+
+                if stage.get("resumptions"):
+                    for r in stage.get("resumptions"):
+                        tpl_r = f"""
+#### {r.get("name") if r.get("name") is not "" else "R1"}
+##### Overview
+```yaml
+key: {r.get("key")} 
+message: {r.get("message")}                        
+```
+##### Status
+```yaml
+Passed: {r.get("passed", "Stage did not run/finish")}
+Start: {r.get("started", "Stage did not run/finish")}
+Completed: {r.get("completed", "Stage did not run/finish")}
+```
+##### Results
+```yaml
+resultDigest: {r.get("resultDigest", "Stage did not run/finish")}
+results:
+{yaml.dump(r.get("results", "No Results to Show")) if r.get("results") and r.get("passed") is not None else "No Results to show"}
+```
+                        """
+                        final_data = final_data.replace("%resumptions", tpl_r)
+                else:
+                    final_data = final_data.replace(
+                        "%resumptions", "This stage does not have any resumptions"
+                    )
                 markdown.document.update(final_data)
 
         except Exception as err:
