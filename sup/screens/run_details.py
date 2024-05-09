@@ -1,14 +1,16 @@
+from rich.text import Text
 from textual.app import ComposeResult
+from textual.containers import Horizontal
 from textual.reactive import Reactive
 from textual.screen import Screen
-from textual.widgets import Footer, Static
+from textual.widgets import Footer, Static, Tree, Label, TabbedContent, TabPane
 from sup.k8s.k8s import KubectlCmd
 
 
 class RunDetail(Screen):
     BINDINGS = [("escape", "app.pop_screen", "Show Run List")]
 
-    run_details = Reactive(str())
+    run_details = Reactive(dict())
 
     def __init__(self, run: str, namespace: str):
         super().__init__()
@@ -17,12 +19,22 @@ class RunDetail(Screen):
         self.refresh_time_in_sec = 5
 
     def compose(self) -> ComposeResult:
-        with Static(id="side_bar"):
-            pass
         with Static(id="top_bar"):
-            pass
-        with Static(id="data_panel"):
-            pass
+            yield Label("Run: ", id="runLabel")
+            yield Label("Message: ", id="messageLabel")
+            yield Label("Status: ", id="statusLabel")
+            yield Label("Cause: ", id="causeLabel")
+        with Horizontal():
+            with Static(id="side_bar"):
+                yield Tree("Stages", id="stagesTree")
+            with Static(id="data_panel"):
+                with TabbedContent():
+                    with TabPane("Details", id="detailsTab"):
+                        pass
+                    with TabPane("Logs", id="logsTab"):
+                        pass
+                    with TabPane("YAML", id="yamlTab"):
+                        pass
         yield Footer()
 
     def on_mount(self) -> None:
@@ -32,10 +44,64 @@ class RunDetail(Screen):
     def populate_stage_tree(self):
         pass
 
+    def populate_top_bar(self):
+        self.query_one("#runLabel").renderable = (
+            Text("Run: ", style="#f59145")
+            + Text(f"{self.run}", style="bold #ffffff")
+            + " in "
+            + Text(f"{self.namespace}", style="bold #ffffff")
+            + " namespace"
+        )
+
+        msg = str(
+            self.run_details.get("status")
+            .get("conditions")[1]
+            .get("message")
+            .split(".")[0]
+        )
+        if not msg:
+            msg = "Nothing to show here."
+        self.query_one("#messageLabel").renderable = Text(
+            "Message: ", style="#f59145"
+        ) + Text(
+            f"{msg}",
+            style="bold #ffffff",
+        )
+
+        ready = str(self.run_details.get("status").get("conditions")[1].get("reason"))
+        self.query_one("#statusLabel").renderable = Text("Status: ", style="#f59145")
+        if ready == "Succeeded":
+            self.query_one("#statusLabel").renderable += Text(
+                ready,
+                style="bold #03AC13",
+            )
+        elif ready == "Failed":
+            self.query_one("#statusLabel").renderable += Text(
+                ready,
+                style="bold #d1573f",
+            )
+        elif ready == "PlatformFailed":
+            self.query_one("#statusLabel").renderable += Text(
+                ready,
+                style="bold #fc9847",
+            )
+        else:
+            self.query_one("#statusLabel").renderable += Text(
+                ready,
+                style="bold #3f9bd1",
+            )
+
+        self.query_one("#causeLabel").renderable = Text(
+            "Cause: ", style="#f59145"
+        ) + Text(
+            f'{self.run_details.get("spec").get("cause").get("message")}',
+            style="bold #ffffff",
+        )
+
     # noinspection PyBroadException
     def update_run_details(self):
         try:
-            self.run_details = str(KubectlCmd.get_run_detail(self.run, self.namespace))
+            self.run_details = KubectlCmd.get_run_detail(self.run, self.namespace)
         except Exception:
             self.notify(
                 "Sup was unable to get Run details from the cluster. Make sure the cluster is accessible and the kubeconfig is valid.",
@@ -46,4 +112,5 @@ class RunDetail(Screen):
 
     def watch_run_details(self):
         # Do something when the run data changes
+        self.populate_top_bar()
         pass
