@@ -1,7 +1,9 @@
+from textual import events
 from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import Vertical
 from textual.reactive import Reactive
+from textual.widget import Widget
 from textual.widgets import Static, DataTable, Input
 from sup.k8s.k8s import KubectlCmd
 from rich.text import Text
@@ -20,7 +22,12 @@ class RunList(Static):
 
     BINDINGS = [
         Binding("ctrl+c", "app.quit", "Quit"),
+        Binding("s", "search_run", "Search Run"),
     ]
+
+    def action_search_run(self):
+        search_bar = self.query_one(Input)
+        search_bar.focus()
 
     def compose(self) -> ComposeResult:
         with Vertical():
@@ -44,8 +51,14 @@ class RunList(Static):
         self.set_interval(self.refresh_time_in_sec, self.update_run_data)
         self.update_run_data()
 
+    # noinspection PyShadowingBuiltins
     def on_input_changed(self, input):
         self.filter_string = input.value
+
+    # noinspection PyShadowingBuiltins
+    def on_input_submitted(self, widget):
+        if widget.input.id == "filterInput":
+            table = self.query_one(DataTable).focus()
 
     # noinspection PyBroadException
     def update_run_data(self):
