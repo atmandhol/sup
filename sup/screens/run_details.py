@@ -1,7 +1,7 @@
 from textual.app import ComposeResult
 from textual.reactive import Reactive
 from textual.screen import Screen
-from textual.widgets import Label, Footer
+from textual.widgets import Footer, Static
 from sup.k8s.k8s import KubectlCmd
 
 
@@ -17,12 +17,20 @@ class RunDetail(Screen):
         self.refresh_time_in_sec = 5
 
     def compose(self) -> ComposeResult:
+        with Static(id="side_bar"):
+            pass
+        with Static(id="top_bar"):
+            pass
+        with Static(id="data_panel"):
+            pass
         yield Footer()
-        yield Label()
 
     def on_mount(self) -> None:
         self.set_interval(self.refresh_time_in_sec, self.update_run_details)
         self.update_run_details()
+
+    def populate_stage_tree(self):
+        pass
 
     # noinspection PyBroadException
     def update_run_details(self):
