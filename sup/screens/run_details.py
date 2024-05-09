@@ -30,8 +30,9 @@ class RunDetail(Screen):
     def __init__(self, run: str, namespace: str):
         super().__init__()
         self.run = run
+        self.selected_stage = dict()
+        self.stage_detail: str = "Select a stage to view the details"
         # noinspection PyTypeChecker
-        self.selected_stage: TreeNode = None
         self.namespace = namespace
         self.refresh_time_in_sec = 5
 
@@ -48,7 +49,7 @@ class RunDetail(Screen):
                 with TabbedContent():
                     with TabPane("Details", id="detailsTab"):
                         yield MarkdownViewer(
-                            markdown="Select a stage to view the details",
+                            markdown=self.stage_detail,
                             show_table_of_contents=False,
                             id="markdownStageDetail",
                         )
@@ -68,7 +69,8 @@ class RunDetail(Screen):
             self.populate_stage_details()
 
     def populate_stage_details(self):
-        # noinspection PyBroadException
+        # noinspection PyBroadException,PyTypeChecker
+        mkd: MarkdownViewer = self.query_one("#markdownStageDetail")
         try:
             if self.selected_stage:
                 path = os.path.dirname(os.path.abspath(__file__)).replace(
@@ -144,7 +146,7 @@ class RunDetail(Screen):
                 if stage.get("resumptions"):
                     for r in stage.get("resumptions"):
                         tpl_r = f"""
-#### {r.get("name") if r.get("name") is not "" else "R1"}
+#### {r.get("name") if r.get("name") != "" else "R1"}
 ##### Overview
 ```yaml
 key: {r.get("key")} 
@@ -168,7 +170,9 @@ results:
                     final_data = final_data.replace(
                         "%resumptions", "This stage does not have any resumptions"
                     )
-                markdown.document.update(final_data)
+                self.stage_detail = final_data
+                mkd.document.update(self.stage_detail)
+                mkd.document.refresh(layout=True, recompose=True)
 
         except Exception as err:
             self.notify(
