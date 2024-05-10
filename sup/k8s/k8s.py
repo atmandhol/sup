@@ -15,7 +15,7 @@ class KubectlCmd:
     @staticmethod
     def stern_run(cmd):
         process = subprocess.Popen(
-            "stern " + cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            "stern" + cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
         out, err = process.communicate()
         process.wait()
@@ -33,8 +33,10 @@ class KubectlCmd:
 
     @staticmethod
     def get_stern_logs(stage_obj):
-        _, out, _ = KubectlCmd.stern_run(
-            f""" "" -c ".*" -A -l supply-chain.apps.tanzu.vmware.com/stage-object-name={stage_obj} --container-state="all" --since=2000h \
-            --timestamps=short --color="auto" --no-follow --only-log-lines --template '{{.Message}} [{{color .PodColor .PodName}}]{{"\n"}}' | sort'"""
+        cmd = (
+            """ "" -c ".*" -A -l supply-chain.apps.tanzu.vmware.com/stage-object-name="""
+            + stage_obj
+            + """ --container-state="all" --since=2000h --timestamps=short --color="auto" --no-follow --only-log-lines --template '{{.Message}} [{{color .PodColor .PodName}}]{{"\\n"}}' | sort"""
         )
-        return str(out)
+        _, out, _ = KubectlCmd.stern_run(cmd)
+        return str(out), cmd
