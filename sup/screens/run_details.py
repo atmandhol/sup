@@ -55,8 +55,6 @@ class RunDetail(Screen):
                         )
                     with TabPane("Logs", id="logsTab"):
                         pass
-                    with TabPane("YAML", id="yamlTab"):
-                        pass
         yield Footer()
 
     def on_mount(self) -> None:
