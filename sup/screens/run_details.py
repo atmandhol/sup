@@ -1,5 +1,6 @@
 import emoji
 import os
+import pyperclip
 import yaml
 from rich.text import Text
 from textual.app import ComposeResult
@@ -14,7 +15,7 @@ from textual.widgets import (
     TabbedContent,
     TabPane,
     MarkdownViewer,
-    RichLog,
+    Log,
 )
 
 from sup.k8s.k8s import KubectlCmd
@@ -22,7 +23,10 @@ from sup.k8s.k8s import KubectlCmd
 
 # noinspection PyTypeChecker,PyBroadException
 class RunDetail(Screen):
-    BINDINGS = [("escape", "app.pop_screen", "Show Run List")]
+    BINDINGS = [
+        ("escape", "app.pop_screen", "Show Run List"),
+        ("c", "copy_logs", "Copy Log"),
+    ]
 
     run_details = Reactive(dict())
 
@@ -33,7 +37,10 @@ class RunDetail(Screen):
         self.stage_detail: str = "Select a stage to view the details"
         self.logs: str = "Select a stage to view the logs"
         self.namespace = namespace
-        self.refresh_time_in_sec = 5
+        self.refresh_time_in_sec = 30
+
+    def action_copy_logs(self) -> None:
+        pyperclip.copy(self.logs)
 
     def compose(self) -> ComposeResult:
         with Static(id="top_bar"):
@@ -53,7 +60,7 @@ class RunDetail(Screen):
                             id="markdownStageDetail",
                         )
                     with TabPane("Logs", id="logsTab"):
-                        yield RichLog(id="logViewer", highlight=True, markup=True)
+                        yield Log(id="logViewer", highlight=True)
         yield Footer()
 
     def on_mount(self) -> None:
@@ -65,7 +72,7 @@ class RunDetail(Screen):
         markdown.show_vertical_scrollbar = True
         markdown.show_horizontal_scrollbar = False
         # Setup
-        log_viewer: RichLog = self.query_one("#logViewer")
+        log_viewer: Log = self.query_one("#logViewer")
         log_viewer.show_vertical_scrollbar = True
         log_viewer.show_horizontal_scrollbar = False
 
@@ -77,14 +84,14 @@ class RunDetail(Screen):
 
     def populate_logs(self):
         if self.selected_stage:
-            log_viewer: RichLog = self.query_one("#logViewer")
+            log_viewer: Log = self.query_one("#logViewer")
             log_viewer.clear()
             stage_obj = (
                 self.selected_stage.data.get("status_stage").get("ref").get("name")
             )
             try:
-                log_data, cmd = KubectlCmd.get_stern_logs(stage_obj=stage_obj)
-                log_viewer.write(Text(log_data))
+                self.logs, cmd = KubectlCmd.get_stern_logs(stage_obj=stage_obj)
+                log_viewer.write(Text(self.logs).plain)
             except Exception:
                 self.notify(
                     "Sup was unable to get logs from the cluster. Make sure the cluster is accessible and the kubeconfig is valid.",
