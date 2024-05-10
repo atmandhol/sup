@@ -14,14 +14,13 @@ from textual.widgets import (
     TabbedContent,
     TabPane,
     MarkdownViewer,
+    RichLog,
 )
-
-# noinspection PyProtectedMember
-from textual.widgets._tree import TreeNode
 
 from sup.k8s.k8s import KubectlCmd
 
 
+# noinspection PyTypeChecker,PyBroadException
 class RunDetail(Screen):
     BINDINGS = [("escape", "app.pop_screen", "Show Run List")]
 
@@ -32,7 +31,7 @@ class RunDetail(Screen):
         self.run = run
         self.selected_stage = dict()
         self.stage_detail: str = "Select a stage to view the details"
-        # noinspection PyTypeChecker
+        self.logs: str = "Select a stage to view the logs"
         self.namespace = namespace
         self.refresh_time_in_sec = 5
 
@@ -54,21 +53,49 @@ class RunDetail(Screen):
                             id="markdownStageDetail",
                         )
                     with TabPane("Logs", id="logsTab"):
-                        pass
+                        yield RichLog(id="logViewer", highlight=True, markup=True)
         yield Footer()
 
     def on_mount(self) -> None:
         self.set_interval(self.refresh_time_in_sec, self.update_run_details)
         self.update_run_details()
+        # Setup Markdown Viewer
+        markdown: MarkdownViewer = self.query_one("#markdownStageDetail")
+        markdown.show_table_of_contents = False
+        markdown.show_vertical_scrollbar = True
+        markdown.show_horizontal_scrollbar = False
+        # Setup
+        log_viewer: RichLog = self.query_one("#logViewer")
+        log_viewer.show_vertical_scrollbar = True
+        log_viewer.show_horizontal_scrollbar = False
 
     def on_tree_node_selected(self, widget) -> None:
         if widget.node.data:
             self.selected_stage = widget.node
             self.populate_stage_details()
+            self.populate_logs()
+
+    def populate_logs(self):
+        if self.selected_stage:
+            log_viewer: RichLog = self.query_one("#logViewer")
+            log_viewer.clear()
+            stage_obj = (
+                self.selected_stage.data.get("status_stage").get("ref").get("name")
+            )
+            try:
+                log_data, cmd = KubectlCmd.get_stern_logs(stage_obj=stage_obj)
+                log_viewer.write(Text(log_data))
+            except Exception:
+                self.notify(
+                    "Sup was unable to get logs from the cluster. Make sure the cluster is accessible and the kubeconfig is valid.",
+                    title="Refresh Error",
+                    severity="error",
+                    timeout=self.refresh_time_in_sec,
+                )
 
     def populate_stage_details(self):
-        # noinspection PyBroadException,PyTypeChecker
         mkd: MarkdownViewer = self.query_one("#markdownStageDetail")
+        mkd.show_table_of_contents = True
         try:
             if self.selected_stage:
                 path = os.path.dirname(os.path.abspath(__file__)).replace(
@@ -77,11 +104,6 @@ class RunDetail(Screen):
                 tpl = open(path, "r").read()
                 stage = self.selected_stage.data.get("run_spec_stage")
                 spec = self.selected_stage.data.get("status_stage")
-                # noinspection PyTypeChecker
-                markdown: MarkdownViewer = self.query_one("#markdownStageDetail")
-                markdown.show_table_of_contents = True
-                markdown.show_vertical_scrollbar = True
-                markdown.show_horizontal_scrollbar = False
                 final_data = (
                     str(tpl)
                     .replace("%component_name", stage.get("componentRef").get("name"))
@@ -181,7 +203,6 @@ results:
             )
 
     def populate_stage_tree(self):
-        # noinspection PyTypeChecker
         tree: Tree = self.query_one("#stagesTree")
         tree.clear()
         stages_node = tree.root
@@ -271,7 +292,6 @@ results:
             style="bold #ffffff",
         )
 
-    # noinspection PyBroadException
     def update_run_details(self):
         try:
             self.run_details = KubectlCmd.get_run_detail(self.run, self.namespace)

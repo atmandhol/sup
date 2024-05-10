@@ -39,4 +39,4 @@ class KubectlCmd:
             + """ --container-state="all" --since=2000h --timestamps=short --color="auto" --no-follow --only-log-lines --template '{{.Message}} [{{color .PodColor .PodName}}]{{"\\n"}}' | sort"""
         )
         _, out, _ = KubectlCmd.stern_run(cmd)
-        return str(out), cmd
+        return out.decode(), cmd
