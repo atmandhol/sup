@@ -26,6 +26,9 @@ class RunDetail(Screen):
     BINDINGS = [
         ("escape", "app.pop_screen", "Show Run List"),
         ("c", "copy_logs", "Copy Log"),
+        ("s", "goto_stage_list", "Stage List"),
+        ("d", "goto_details", "Details"),
+        ("l", "goto_logs", "Logs"),
     ]
 
     run_details = Reactive(dict())
@@ -42,6 +45,22 @@ class RunDetail(Screen):
     def action_copy_logs(self) -> None:
         pyperclip.copy(self.logs)
 
+    def action_goto_stage_list(self):
+        tree = self.query_one("#stagesTree")
+        tree.focus()
+
+    def action_goto_details(self):
+        tab = self.query_one(TabbedContent)
+        tab.active = "detailsTab"
+        mkd = self.query_one(MarkdownViewer)
+        mkd.focus()
+
+    def action_goto_logs(self):
+        tab = self.query_one(TabbedContent)
+        tab.active = "logsTab"
+        log = self.query_one(Log)
+        log.focus()
+
     def compose(self) -> ComposeResult:
         with Static(id="top_bar"):
             yield Label("Run: ", id="runLabel")
@@ -52,7 +71,7 @@ class RunDetail(Screen):
             with Static(id="side_bar"):
                 yield Tree("Stages", id="stagesTree")
             with Static(id="data_panel"):
-                with TabbedContent():
+                with TabbedContent(id="tabbedContentPanel"):
                     with TabPane("Details", id="detailsTab"):
                         yield MarkdownViewer(
                             markdown=self.stage_detail,
