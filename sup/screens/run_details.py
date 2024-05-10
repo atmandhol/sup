@@ -15,7 +15,7 @@ from textual.widgets import (
     TabbedContent,
     TabPane,
     MarkdownViewer,
-    Log,
+    RichLog,
 )
 
 from sup.k8s.k8s import KubectlCmd
@@ -58,7 +58,7 @@ class RunDetail(Screen):
     def action_goto_logs(self):
         tab = self.query_one(TabbedContent)
         tab.active = "logsTab"
-        log = self.query_one(Log)
+        log = self.query_one(RichLog)
         log.focus()
 
     def compose(self) -> ComposeResult:
@@ -79,7 +79,7 @@ class RunDetail(Screen):
                             id="markdownStageDetail",
                         )
                     with TabPane("Logs", id="logsTab"):
-                        yield Log(id="logViewer", highlight=True)
+                        yield RichLog(id="logViewer", highlight=True)
         yield Footer()
 
     def on_mount(self) -> None:
@@ -91,7 +91,7 @@ class RunDetail(Screen):
         markdown.show_vertical_scrollbar = True
         markdown.show_horizontal_scrollbar = False
         # Setup
-        log_viewer: Log = self.query_one("#logViewer")
+        log_viewer: RichLog = self.query_one("#logViewer")
         log_viewer.show_vertical_scrollbar = True
         log_viewer.show_horizontal_scrollbar = False
 
@@ -103,14 +103,14 @@ class RunDetail(Screen):
 
     def populate_logs(self):
         if self.selected_stage:
-            log_viewer: Log = self.query_one("#logViewer")
+            log_viewer: RichLog = self.query_one("#logViewer")
             log_viewer.clear()
             stage_obj = (
                 self.selected_stage.data.get("status_stage").get("ref").get("name")
             )
             try:
                 self.logs, cmd = KubectlCmd.get_stern_logs(stage_obj=stage_obj)
-                log_viewer.write(Text(self.logs).plain)
+                log_viewer.write(Text(self.logs))
             except Exception:
                 self.notify(
                     "Sup was unable to get logs from the cluster. Make sure the cluster is accessible and the kubeconfig is valid.",
