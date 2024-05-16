@@ -23,6 +23,22 @@ RunList Button {
     margin: 0 1 0 1;
 }
 
+RunList #top_bar {
+    dock: top;
+    width: 100%;
+    height: 4;
+    padding: 0;
+}
+
+RunList Label {
+    height: 4;
+    padding: 1;
+}
+
+RunList Select {
+    width: 40;
+}
+
 RunDetail #top_bar {
     dock: top;
     width: 100%;

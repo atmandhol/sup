@@ -56,6 +56,11 @@ class KubectlCmd:
         return json.loads(out)
 
     @staticmethod
+    def get_sc_list():
+        _, out, _ = KubectlCmd.run("get supplychains -A -ojson")
+        return json.loads(out).get("items")
+
+    @staticmethod
     def get_stern_logs(stage_obj):
         cmd = (
             """ "" -c ".*" -A -l supply-chain.apps.tanzu.vmware.com/stage-object-name="""

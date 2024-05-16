@@ -1,8 +1,9 @@
+from textual import on
 from textual.app import ComposeResult
 from textual.binding import Binding
-from textual.containers import Vertical
+from textual.containers import Vertical, Horizontal
 from textual.reactive import Reactive
-from textual.widgets import Static, DataTable, Input
+from textual.widgets import Static, DataTable, Input, Switch, Label, SelectionList, Select
 from sup.k8s.k8s import KubectlCmd
 from rich.text import Text
 from sup.screens.run_details import RunDetail
@@ -13,10 +14,12 @@ class RunList(Static):
 
     run_data = Reactive(list())
     filter_string = Reactive(str())
+    supply_chains = Reactive(list())
 
     def __init__(self):
         super().__init__()
         self.refresh_time_in_sec = 30
+        self.selected_chain = None
 
     BINDINGS = [
         Binding("ctrl+c", "app.quit", "Quit"),
@@ -34,6 +37,12 @@ class RunList(Static):
         search_bar.focus()
 
     def compose(self) -> ComposeResult:
+        with Static(id="top_bar"):
+            with Horizontal():
+                yield Label("Latest")
+                yield Switch(value=True)
+                yield Label("Chains")
+                yield Select([("all", None)], allow_blank=True)
         with Vertical():
             yield Input(id="filterInput")
             yield DataTable(id="runDataTable")
@@ -52,8 +61,8 @@ class RunList(Static):
             "message",
         )
         table.add_columns(*run_list)
-        self.set_interval(self.refresh_time_in_sec, self.update_run_data)
-        self.update_run_data()
+        self.set_interval(self.refresh_time_in_sec, self.update_data)
+        self.update_data()
 
     # noinspection PyShadowingBuiltins
     def on_input_changed(self, input):
@@ -63,6 +72,10 @@ class RunList(Static):
     def on_input_submitted(self, widget):
         if widget.input.id == "filterInput":
             self.query_one(DataTable).focus()
+
+    @on(Select.Changed)
+    def select_changed(self, event: Select.Changed) -> None:
+        self.selected_chain = str(event.value)
 
     def on_data_table_row_selected(self, widget):
         data_table: DataTable = widget.data_table
@@ -77,20 +90,30 @@ class RunList(Static):
             self.app.push_screen(RunDetail(run=run_name, namespace=ns))
 
     # noinspection PyBroadException
-    def update_run_data(self):
+    def update_data(self):
         try:
             self.run_data = KubectlCmd.get_run_list()
+            self.supply_chains = KubectlCmd.get_sc_list()
             # self.notify(
             #     f"Run Data updated at {datetime.now()}",
             #     timeout=self.refresh_time_in_sec,
             # )
-        except Exception:
+        except Exception as err:
             self.notify(
-                "Sup was unable to get Run data from the cluster. Make sure the cluster is accessible and the kubeconfig is valid.",
+                f"Sup was unable to get Run data from the cluster. Make sure the cluster is accessible and the kubeconfig is valid. {err}",
                 title="Refresh Error",
                 severity="error",
                 timeout=self.refresh_time_in_sec,
             )
+
+    def watch_supply_chains(self):
+        select: Select = self.query_one(Select)
+        select.clear()
+        val = list()
+        for sc in self.supply_chains:
+            sc_name = sc.get("metadata").get("name")
+            val.append((sc_name, sc_name))
+        select.set_options(val)
 
     def watch_filter_string(self):
         self.watch_run_data()
