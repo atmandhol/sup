@@ -1,3 +1,5 @@
+import time
+
 from textual import on
 from textual.app import ComposeResult
 from textual.binding import Binding
@@ -29,6 +31,7 @@ class RunList(Static):
     def __init__(self):
         super().__init__()
         self.refresh_time_in_sec = 30
+        self.start = time.time()
 
     BINDINGS = [
         Binding("ctrl+c", "app.quit", "Quit"),
@@ -101,7 +104,6 @@ class RunList(Static):
             self.selected_chain = str(event.value)
         elif event.select.id == "statusSelect":
             self.selected_status = str(event.value)
-        self.update_data()
 
     def on_data_table_row_selected(self, widget):
         data_table: DataTable = widget.data_table
@@ -135,10 +137,12 @@ class RunList(Static):
             )
 
     def watch_selected_chain(self):
-        self.watch_run_data()
+        if time.time() - self.start > 5:
+            self.update_data()
 
     def watch_selected_status(self):
-        self.watch_run_data()
+        if time.time() - self.start > 5:
+            self.update_data()
 
     # noinspection PyTypeChecker
     def watch_supply_chains(self):
