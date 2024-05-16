@@ -22,7 +22,7 @@ class KubectlCmd:
         return process, out, err
 
     @staticmethod
-    def get_run_list(chains: list = None, statuses: list = None, latest=True):
+    def get_run_list(chain: str = None, status: str = None, latest=True):
         _, out, _ = KubectlCmd.run("get all-runs -A -ojson")
         run_list = json.loads(out).get("items")
         filtered_run_list = list()
@@ -36,14 +36,14 @@ class KubectlCmd:
             elif latest and KubectlCmd.is_latest(run, run_list):
                 latest_check_passed = True
 
-            if not chains:
+            if not chain or chain == "all":
                 chain_check_passed = True
-            elif KubectlCmd.belongs_to_chains(run, chains):
+            elif KubectlCmd.belongs_to_chains(run, chain):
                 chain_check_passed = True
 
-            if not statuses:
+            if not status or status == "all":
                 status_check_passed = True
-            elif KubectlCmd.belongs_to_statuses(run, chains):
+            elif KubectlCmd.belongs_to_statuses(run, status):
                 status_check_passed = True
 
             if latest_check_passed and chain_check_passed and status_check_passed:
@@ -92,15 +92,15 @@ class KubectlCmd:
         return True
 
     @staticmethod
-    def belongs_to_chains(run, chain_list):
+    def belongs_to_chains(run, filter_chain):
         chain = (
             run.get("metadata")
             .get("labels")
             .get("supply-chain.apps.tanzu.vmware.com/workload-kind")
         )
-        return chain in chain_list
+        return chain.lower() == filter_chain.lower()
 
     @staticmethod
-    def belongs_to_statuses(run, status_list):
+    def belongs_to_statuses(run, filter_status):
         status = run.get("status").get("conditions")[1].get("reason")
-        return status in status_list
+        return status.lower() == filter_status.lower()

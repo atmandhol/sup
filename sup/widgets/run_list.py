@@ -3,7 +3,14 @@ from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import Vertical, Horizontal
 from textual.reactive import Reactive
-from textual.widgets import Static, DataTable, Input, Switch, Label, SelectionList, Select
+from textual.widgets import (
+    Static,
+    DataTable,
+    Input,
+    Switch,
+    Label,
+    Select,
+)
 from sup.k8s.k8s import KubectlCmd
 from rich.text import Text
 from sup.screens.run_details import RunDetail
@@ -15,11 +22,13 @@ class RunList(Static):
     run_data = Reactive(list())
     filter_string = Reactive(str())
     supply_chains = Reactive(list())
+    selected_chain = Reactive(str())
+    selected_status = Reactive(str())
+    latest_run = Reactive(bool)
 
     def __init__(self):
         super().__init__()
         self.refresh_time_in_sec = 30
-        self.selected_chain = None
 
     BINDINGS = [
         Binding("ctrl+c", "app.quit", "Quit"),
@@ -39,10 +48,23 @@ class RunList(Static):
     def compose(self) -> ComposeResult:
         with Static(id="top_bar"):
             with Horizontal():
-                yield Label("Latest")
+                yield Label("Show only latest:")
                 yield Switch(value=True)
-                yield Label("Chains")
-                yield Select([("all", None)], allow_blank=True)
+                yield Label("Filter by chain:")
+                yield Select([("all", "all")], allow_blank=False, id="chainSelect")
+                yield Label("Filter by status:")
+                yield Select(
+                    [
+                        ("all", "all"),
+                        ("Running", "Running"),
+                        ("Succeeded", "Succeeded"),
+                        ("Failed", "Failed"),
+                        ("PlatformFailed", "PlatformFailed"),
+                    ],
+                    allow_blank=False,
+                    id="statusSelect",
+                )
+
         with Vertical():
             yield Input(id="filterInput")
             yield DataTable(id="runDataTable")
@@ -75,7 +97,11 @@ class RunList(Static):
 
     @on(Select.Changed)
     def select_changed(self, event: Select.Changed) -> None:
-        self.selected_chain = str(event.value)
+        if event.select.id == "chainSelect":
+            self.selected_chain = str(event.value)
+        elif event.select.id == "statusSelect":
+            self.selected_status = str(event.value)
+        self.update_data()
 
     def on_data_table_row_selected(self, widget):
         data_table: DataTable = widget.data_table
@@ -92,7 +118,9 @@ class RunList(Static):
     # noinspection PyBroadException
     def update_data(self):
         try:
-            self.run_data = KubectlCmd.get_run_list()
+            self.run_data = KubectlCmd.get_run_list(
+                chain=self.selected_chain, status=self.selected_status
+            )
             self.supply_chains = KubectlCmd.get_sc_list()
             # self.notify(
             #     f"Run Data updated at {datetime.now()}",
@@ -106,10 +134,16 @@ class RunList(Static):
                 timeout=self.refresh_time_in_sec,
             )
 
+    def watch_selected_chain(self):
+        self.watch_run_data()
+
+    def watch_selected_status(self):
+        self.watch_run_data()
+
+    # noinspection PyTypeChecker
     def watch_supply_chains(self):
-        select: Select = self.query_one(Select)
-        select.clear()
-        val = list()
+        select: Select = self.query_one("#chainSelect")
+        val = [("all", "all")]
         for sc in self.supply_chains:
             sc_name = sc.get("metadata").get("name")
             val.append((sc_name, sc_name))
