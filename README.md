@@ -14,12 +14,12 @@ brew install pipx
 pipx ensurepath
 ```
 To Install latest:
-```
+```bash
 pipx install git+https://github.com/atmandhol/sup.git
 ```
 
 If you already have `sup` installed from latest, and want to pull in the new changes:
-```
+```bash
 pipx reinstall sup
 ```
 
@@ -30,29 +30,29 @@ pipx reinstall sup
 ## Setup for Local
 
 * Install `poetry` on the system level using 
-```
+```bash
 pip3 install poetry
 ```
 * Create a virtualenv `tappr` using virtualenvwrapper and run install
-```
+```bash
 mkvirtualenv sup -p python3
 poetry install
 ```
 
 * Run locally
-```
-textual run sup/main.py
+```bash
+poetry run sup
 ```
 
 ### Build
 Run the following poetry command
 ```bash
-$ poetry build
+poetry build
 ```
 This will generate a dist folder with a whl file and a tar.gz file.
 
 ### Upgrade dependencies
 Run the following poetry command
 ```bash
-$ poetry update
+poetry update
 ```
