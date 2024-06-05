@@ -1,7 +1,7 @@
 from textual.app import App, ComposeResult
 from textual.widgets import Footer
 
-from widgets.run_list import RunList
+from ..widgets.run_list import RunList
 
 
 # noinspection PyTypeChecker
@@ -10,7 +10,7 @@ class Sup(App):
 
     TITLE = "Sup - Interactive CLI for Tanzu Supply Chain"
 
-    CSS_PATH = "styles/sup.css"
+    CSS_PATH = "../styles/sup.css"
 
     def compose(self) -> ComposeResult:
         """Create child widgets for the app."""
@@ -18,6 +18,6 @@ class Sup(App):
         yield RunList()
 
 
-if __name__ == "__main__":
-    app = Sup()
-    app.run()
+def run() -> None:
+    """Run the application."""
+    Sup().run()
