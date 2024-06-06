@@ -4,7 +4,7 @@
 ## Getting Started
 ### Install sup
 #### Prerequisites
-- Install the latest Python 3.10.x from [python.org](https://www.python.org/downloads/)
+- Install the latest Python 3.12.x or later from [python.org](https://www.python.org/downloads/)
 
 Recommended way to install tappr is by using [pipx](https://pypa.github.io/pipx/#install-pipx).
 You can `brew` install `pipx` as follows:
