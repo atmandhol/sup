@@ -16,6 +16,7 @@ from textual.widgets import (
 from sup.k8s.k8s import KubectlCmd
 from rich.text import Text
 from sup.screens.run_details import RunDetail
+from threading import Thread
 
 
 class RunList(Static):
@@ -88,6 +89,8 @@ class RunList(Static):
         table.add_columns(*run_list)
         self.set_interval(self.refresh_time_in_sec, self.update_data)
         self.update_data()
+        search_bar = self.query_one(Input)
+        search_bar.focus()
 
     # noinspection PyShadowingBuiltins
     def on_input_changed(self, input):
@@ -118,7 +121,7 @@ class RunList(Static):
             self.app.push_screen(RunDetail(run=run_name, namespace=ns))
 
     # noinspection PyBroadException
-    def update_data(self):
+    def _update_data_handler(self):
         try:
             self.run_data = KubectlCmd.get_run_list(
                 chain=self.selected_chain, status=self.selected_status
@@ -135,6 +138,10 @@ class RunList(Static):
                 severity="error",
                 timeout=self.refresh_time_in_sec,
             )
+
+    def update_data(self):
+        t = Thread(target=self._update_data_handler)
+        t.start()
 
     def watch_selected_chain(self):
         if time.time() - self.start > 5:

@@ -19,6 +19,7 @@ from textual.widgets import (
 )
 
 from sup.k8s.k8s import KubectlCmd
+from threading import Thread
 
 
 # noinspection PyTypeChecker,PyBroadException
@@ -101,7 +102,7 @@ class RunDetail(Screen):
             self.populate_stage_details()
             self.populate_logs()
 
-    def populate_logs(self):
+    def _populate_logs_handler(self):
         if self.selected_stage:
             log_viewer: RichLog = self.query_one("#logViewer")
             log_viewer.clear()
@@ -118,6 +119,10 @@ class RunDetail(Screen):
                     severity="error",
                     timeout=self.refresh_time_in_sec,
                 )
+
+    def populate_logs(self):
+        t = Thread(target=self._populate_logs_handler)
+        t.start()
 
     def populate_stage_details(self):
         mkd: MarkdownViewer = self.query_one("#markdownStageDetail")
@@ -318,7 +323,7 @@ results:
             style="bold #ffffff",
         )
 
-    def update_run_details(self):
+    def _update_run_details_handler(self):
         try:
             self.run_details = KubectlCmd.get_run_detail(self.run, self.namespace)
         except Exception:
@@ -329,8 +334,12 @@ results:
                 timeout=self.refresh_time_in_sec,
             )
 
+    def update_run_details(self):
+        t = Thread(target=self._update_run_details_handler)
+        t.run()
+
     def watch_run_details(self):
-        self.populate_top_bar()
         self.populate_stage_tree()
+        self.populate_top_bar()
         if self.selected_stage:
             self.populate_stage_details()
