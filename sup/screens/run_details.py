@@ -4,7 +4,7 @@ import pyperclip
 import yaml
 from rich.text import Text
 from textual.app import ComposeResult
-from textual.containers import Horizontal
+from textual.containers import Horizontal, Vertical
 from textual.reactive import Reactive
 from textual.screen import Screen
 from textual.widgets import (
@@ -16,6 +16,7 @@ from textual.widgets import (
     TabPane,
     MarkdownViewer,
     RichLog,
+    Button,
 )
 
 from sup.k8s.k8s import KubectlCmd
@@ -64,10 +65,13 @@ class RunDetail(Screen):
 
     def compose(self) -> ComposeResult:
         with Static(id="top_bar"):
-            yield Label("Run: ", id="runLabel")
-            yield Label("Message: ", id="messageLabel")
-            yield Label("Status: ", id="statusLabel")
-            yield Label("Cause: ", id="causeLabel")
+            with Horizontal():
+                with Vertical():
+                    yield Label("Run: ", id="runLabel")
+                    yield Label("Message: ", id="messageLabel")
+                    yield Label("Status: ", id="statusLabel")
+                    yield Label("Cause: ", id="causeLabel")
+                yield Button.warning("Delete Run", id="deleteRunBtn")
         with Horizontal():
             with Static(id="side_bar"):
                 yield Tree("Stages", id="stagesTree")
@@ -95,6 +99,27 @@ class RunDetail(Screen):
         log_viewer: RichLog = self.query_one("#logViewer")
         log_viewer.show_vertical_scrollbar = True
         log_viewer.show_horizontal_scrollbar = False
+
+        # Set initial focus
+        tree: Tree = self.query_one("#stagesTree")
+        tree.focus()
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "deleteRunBtn":
+            try:
+                KubectlCmd.delete_run(run=self.run, namespace=self.namespace)
+                self.notify(
+                    f"Run {self.run} in namespace {self.namespace} was deleted.",
+                    timeout=10,
+                )
+                self.app.pop_screen()
+            except Exception as err:
+                self.notify(
+                    f"Sup was unable to delete the run from the cluster. Error {err}",
+                    title="Delete Error",
+                    severity="error",
+                    timeout=10,
+                )
 
     def on_tree_node_selected(self, widget) -> None:
         if widget.node.data:

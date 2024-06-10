@@ -104,3 +104,8 @@ class KubectlCmd:
     def belongs_to_statuses(run, filter_status):
         status = run.get("status").get("conditions")[1].get("reason")
         return status.lower() == filter_status.lower()
+
+    @staticmethod
+    def delete_run(run, namespace):
+        process, _, _ = KubectlCmd.run(f"delete {run} -n {namespace}")
+        return process.returncode
