@@ -127,132 +127,208 @@ class RunDetail(Screen):
             self.populate_stage_details()
             self.populate_logs()
 
+    # noinspection PyUnresolvedReferences
     def _populate_logs_handler(self):
-        if self.selected_stage:
-            log_viewer: RichLog = self.query_one("#logViewer")
-            log_viewer.clear()
-            stage_obj = (
-                self.selected_stage.data.get("status_stage").get("ref").get("name")
-            )
-            try:
-                self.logs, cmd = KubectlCmd.get_stern_logs(stage_obj=stage_obj)
-                log_viewer.write(Text(self.logs))
-            except Exception:
-                self.notify(
-                    "Sup was unable to get logs from the cluster. Make sure the cluster is accessible and the kubeconfig is valid.",
-                    title="Refresh Error",
-                    severity="error",
-                    timeout=self.refresh_time_in_sec,
+        log_viewer: RichLog = self.query_one("#logViewer")
+        log_viewer.clear()
+        try:
+            if self.selected_stage and not self.selected_stage.data.get("resumption"):
+                stage_obj = (
+                    self.selected_stage.data.get("status_stage").get("ref").get("name")
                 )
+                self.logs, cmd = KubectlCmd.get_stern_logs_for_stage(stage_obj=stage_obj)
+            else:
+                resumption_obj = (
+                    self.selected_stage.data.get("status_resumption").get("ref").get("name")
+                )
+                self.logs, cmd = KubectlCmd.get_stern_logs_for_resumption(resumption_obj=resumption_obj)
+
+            log_viewer.write(Text(self.logs))
+        except Exception:
+            log_viewer.write(
+                Text(
+                    "Could not get logs. Please make sure [bold]stern[/bold] CLI is installed."
+                )
+            )
+            self.notify(
+                "Sup was unable to get logs from the cluster. Make sure the cluster is accessible and the kubeconfig is valid.",
+                title="Refresh Error",
+                severity="error",
+                timeout=self.refresh_time_in_sec,
+            )
 
     def populate_logs(self):
         t = Thread(target=self._populate_logs_handler)
         t.start()
 
+    # noinspection PyUnresolvedReferences
     def populate_stage_details(self):
         mkd: MarkdownViewer = self.query_one("#markdownStageDetail")
         mkd.show_table_of_contents = True
         try:
-            if self.selected_stage:
+            if self.selected_stage and not self.selected_stage.data.get("resumption"):
                 path = os.path.dirname(os.path.abspath(__file__)).replace(
                     "/screens", f"/templates/stage_detail.md"
                 )
                 tpl = open(path, "r").read()
-                stage = self.selected_stage.data.get("run_spec_stage")
-                spec = self.selected_stage.data.get("status_stage")
+                run_spec_stage = self.selected_stage.data.get("run_spec_stage")
+                status_stage = self.selected_stage.data.get("status_stage")
                 final_data = (
                     str(tpl)
-                    .replace("%component_name", stage.get("componentRef").get("name"))
-                    .replace("%namespace", stage.get("componentRef").get("namespace"))
+                    .replace(
+                        "%component_name",
+                        run_spec_stage.get("componentRef").get("name"),
+                    )
+                    .replace(
+                        "%namespace",
+                        run_spec_stage.get("componentRef").get("namespace"),
+                    )
                     .replace(
                         "%outputs",
-                        yaml.dump(stage.get("outputs", "No Outputs to report")),
+                        yaml.dump(
+                            run_spec_stage.get("outputs", "No Outputs to report")
+                        ),
                     )
                     .replace(
                         "%pipelinerun_name",
-                        spec.get("pipelineRun").get("ref").get("name")
-                        if spec.get("pipelineRun")
+                        status_stage.get("pipelineRun").get("ref").get("name")
+                        if status_stage.get("pipelineRun")
                         else "PipelineRun not created",
                     )
                     .replace(
                         "%pipelinerun_ns",
-                        spec.get("pipelineRun").get("ref").get("namespace")
-                        if spec.get("pipelineRun")
+                        status_stage.get("pipelineRun").get("ref").get("namespace")
+                        if status_stage.get("pipelineRun")
                         else "PipelineRun not created",
                     )
                     .replace(
                         "%pipeline_passed",
-                        str(stage.get("pipeline").get("passed", "Did not run"))
-                        if stage.get("pipeline")
-                        and stage.get("pipeline").get("passed") is not None
+                        str(run_spec_stage.get("pipeline").get("passed", "Did not run"))
+                        if run_spec_stage.get("pipeline")
+                        and run_spec_stage.get("pipeline").get("passed") is not None
                         else "Stage did not run/finish",
                     )
                     .replace(
                         "%pipeline_start",
-                        stage.get("pipeline").get("started", "Did not run")
-                        if stage.get("pipeline")
-                        and stage.get("pipeline").get("started")
+                        run_spec_stage.get("pipeline").get("started", "Did not run")
+                        if run_spec_stage.get("pipeline")
+                        and run_spec_stage.get("pipeline").get("started")
                         else "Stage did not run/finish",
                     )
                     .replace(
                         "%pipeline_end",
-                        stage.get("pipeline").get("completed", "Did not run")
-                        if stage.get("pipeline")
-                        and stage.get("pipeline").get("completed")
+                        run_spec_stage.get("pipeline").get("completed", "Did not run")
+                        if run_spec_stage.get("pipeline")
+                        and run_spec_stage.get("pipeline").get("completed")
                         else "Stage did not run/finish",
                     )
                     .replace(
                         "%pipeline_results",
                         yaml.dump(
-                            stage.get("pipeline").get("results", "No Results to Show")
+                            run_spec_stage.get("pipeline").get(
+                                "results", "No Results to Show"
+                            )
                         )
-                        if stage.get("pipeline")
-                        and stage.get("pipeline").get("passed") is not None
+                        if run_spec_stage.get("pipeline")
+                        and run_spec_stage.get("pipeline").get("passed") is not None
                         else "No Results to show",
                     )
                     .replace(
                         "%pipeline_message",
-                        stage.get("pipeline").get("message", "Did not run")
-                        if stage.get("pipeline")
-                        and stage.get("pipeline").get("message")
+                        run_spec_stage.get("pipeline").get("message", "Did not run")
+                        if run_spec_stage.get("pipeline")
+                        and run_spec_stage.get("pipeline").get("message")
                         else "Stage did not run/finish",
                     )
                 )
+            else:
+                path = os.path.dirname(os.path.abspath(__file__)).replace(
+                    "/screens", f"/templates/resumption_detail.md"
+                )
+                tpl = open(path, "r").read()
+                run_spec_resumption = self.selected_stage.data.get(
+                    "run_spec_resumption"
+                )
+                status_resumption = self.selected_stage.data.get("status_resumption")
 
-                if stage.get("resumptions"):
-                    for r in stage.get("resumptions"):
-                        tpl_r = f"""
-#### {r.get("name") if r.get("name") != "" else "R1"}
-##### Overview
-```yaml
-key: {r.get("key")} 
-message: {r.get("message")}                        
-```
-##### Status
-```yaml
-Passed: {r.get("passed", "Stage did not run/finish")}
-Start: {r.get("started", "Stage did not run/finish")}
-Completed: {r.get("completed", "Stage did not run/finish")}
-```
-##### Results
-```yaml
-resultDigest: {r.get("resultDigest", "Stage did not run/finish")}
-results:
-{yaml.dump(r.get("results", "No Results to Show")) if r.get("results") and r.get("passed") is not None else "No Results to show"}
-```
-                        """
-                        final_data = final_data.replace("%resumptions", tpl_r)
-                else:
-                    final_data = final_data.replace(
-                        "%resumptions", "This stage does not have any resumptions"
+                final_data = (
+                    str(tpl)
+                    .replace(
+                        "%resumption_stage_name",
+                        status_resumption.get("name"),
                     )
-                self.stage_detail = final_data
-                mkd.document.update(self.stage_detail)
-                mkd.document.refresh(layout=True, recompose=True)
+                    .replace(
+                        "%resumption_name",
+                        status_resumption.get("ref").get("name"),
+                    )
+                    .replace(
+                        "%namespace",
+                        status_resumption.get("ref").get("namespace"),
+                    )
+                    .replace(
+                        "%key",
+                        run_spec_resumption.get("key")
+                        if "key" in run_spec_resumption
+                        else "Resumption did not run/finish",
+                    )
+                    .replace(
+                        "%message",
+                        run_spec_resumption.get("message")
+                        if "message" in run_spec_resumption
+                        else "Resumption did not run/finish",
+                    )
+                    .replace(
+                        "%taskrun_name",
+                        status_resumption.get("taskRun").get("ref").get("name")
+                        if status_resumption.get("taskRun")
+                        else "taskRun not created",
+                    )
+                    .replace(
+                        "%taskrun_ns",
+                        status_resumption.get("taskRun").get("ref").get("namespace")
+                        if status_resumption.get("taskRun")
+                        else "taskRun not created",
+                    )
+                    .replace(
+                        "%task_passed",
+                        str(run_spec_resumption.get("passed", "Did not run"))
+                        if run_spec_resumption.get("passed") is not None
+                        else "Resumption did not run/finish",
+                    )
+                    .replace(
+                        "%task_start",
+                        run_spec_resumption.get("started", "Did not run")
+                        if run_spec_resumption.get("started")
+                        else "Resumption did not run/finish",
+                    )
+                    .replace(
+                        "%task_end",
+                        run_spec_resumption.get("completed", "Did not run")
+                        if run_spec_resumption.get("completed")
+                        else "Resumption did not run/finish",
+                    )
+                    .replace(
+                        "%task_results",
+                        yaml.dump(
+                            run_spec_resumption.get("results", "No Results to Show")
+                        )
+                        if run_spec_resumption.get("passed") is not None
+                        else "No Results to show",
+                    )
+                    .replace(
+                        "%task_digest",
+                        run_spec_resumption.get("resultDigest", "Did not run")
+                        if run_spec_resumption.get("resultDigest")
+                        else "Resumption did not run/finish",
+                    )
+                )
 
+            self.stage_detail = final_data
+            mkd.document.update(self.stage_detail)
+            mkd.document.refresh(layout=True, recompose=True)
         except Exception as err:
             self.notify(
-                f"Sup was unable to get Stage details from the cluster. Error {err}",
+                f"Sup was unable to get Stage/Resumption details from the cluster. Error {err}",
                 title="Refresh Error",
                 severity="error",
                 timeout=self.refresh_time_in_sec,
@@ -264,34 +340,74 @@ results:
         stages_node = tree.root
         stages_node.expand()
         ct = 0
-        for stage in (
+        for run_spec_stage in (
             self.run_details.get("status").get("workloadRun").get("spec").get("stages")
         ):
-            if not stage.get("pipeline"):
+            if not run_spec_stage.get("pipeline"):
                 ej = emoji.emojize(":white_circle: ")
-                spec = {}
-            elif stage.get("pipeline").get("started") and not stage.get("pipeline").get(
-                "completed"
-            ):
+                status_stage = {}
+            elif run_spec_stage.get("pipeline").get(
+                "started"
+            ) and not run_spec_stage.get("pipeline").get("completed"):
                 ej = emoji.emojize(":blue_circle: ")
-                spec = self.run_details.get("status").get("stages", [])[ct]
+                status_stage = self.run_details.get("status").get("stages", [])[ct]
             elif (
-                stage.get("pipeline").get("passed")
-                and stage.get("pipeline").get("passed") is True
+                run_spec_stage.get("pipeline").get("passed")
+                and run_spec_stage.get("pipeline").get("passed") is True
             ):
                 ej = emoji.emojize(":green_circle: ")
-                spec = self.run_details.get("status").get("stages", [])[ct]
+                status_stage = self.run_details.get("status").get("stages", [])[ct]
             else:
                 ej = emoji.emojize(":red_circle: ")
-                spec = self.run_details.get("status").get("stages", [])[ct]
+                status_stage = self.run_details.get("status").get("stages", [])[ct]
 
-            stages_node.add_leaf(
-                ej + stage.get("name"),
+            stg_node = stages_node.add_leaf(
+                ej + run_spec_stage.get("name"),
                 {
-                    "run_spec_stage": stage,
-                    "status_stage": spec,
+                    "run_spec_stage": run_spec_stage,
+                    "status_stage": status_stage,
+                    "resumption": False,
                 },
             )
+
+            if run_spec_stage.get("resumptions"):
+                rct = 0
+                for r in run_spec_stage.get("resumptions"):
+                    if not r.get("started") and not r.get("completed"):
+                        ej = emoji.emojize(":white_circle: ")
+                        status_resumption = {}
+                    elif r.get("started") and not r.get("completed"):
+                        ej = emoji.emojize(":blue_circle: ")
+                        status_resumption = (
+                            self.run_details.get("status")
+                            .get("stages", [])[ct]
+                            .get("resumptions", [])[rct]
+                        )
+                    elif r.get("passed") and r.get("passed") is True:
+                        ej = emoji.emojize(":green_circle: ")
+                        status_resumption = (
+                            self.run_details.get("status")
+                            .get("stages", [])[ct]
+                            .get("resumptions", [])[rct]
+                        )
+                    else:
+                        ej = emoji.emojize(":red_circle: ")
+                        status_resumption = (
+                            self.run_details.get("status")
+                            .get("stages", [])[ct]
+                            .get("resumptions", [])[rct]
+                        )
+
+                    stg_node.add_leaf(
+                        ej + r.get("name"),
+                        {
+                            "run_spec_resumption": r,
+                            "resumption": True,
+                            "status_resumption": status_resumption,
+                        },
+                    )
+                    stg_node.expand_all()
+                    rct += 1
             ct += 1
 
     def populate_top_bar(self):

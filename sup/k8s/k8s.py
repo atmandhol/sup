@@ -61,10 +61,21 @@ class KubectlCmd:
         return json.loads(out).get("items")
 
     @staticmethod
-    def get_stern_logs(stage_obj):
+    def get_stern_logs_for_stage(stage_obj):
         cmd = (
             """ "" -c ".*" -A -l supply-chain.apps.tanzu.vmware.com/stage-object-name="""
             + stage_obj
+            + """ --container-state="all" --since=2000h --timestamps=short --color="auto" --no-follow --only-log-lines --template '{{.Message}} {{"\\n"}}' | sort"""
+        )
+        # Add [{{color .PodColor .PodName}}] after message to add stage
+        _, out, _ = KubectlCmd.stern_run(cmd)
+        return out.decode(), cmd
+
+    @staticmethod
+    def get_stern_logs_for_resumption(resumption_obj):
+        cmd = (
+            """ "" -c ".*" -A -l supply-chain.apps.tanzu.vmware.com/resumption-name="""
+            + resumption_obj
             + """ --container-state="all" --since=2000h --timestamps=short --color="auto" --no-follow --only-log-lines --template '{{.Message}} {{"\\n"}}' | sort"""
         )
         # Add [{{color .PodColor .PodName}}] after message to add stage

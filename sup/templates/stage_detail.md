@@ -31,7 +31,3 @@ Results:
 %pipeline_results
 Message: %pipeline_message
 ```
-
-### Resumptions
-%resumptions
-
