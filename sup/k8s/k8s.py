@@ -65,7 +65,7 @@ class KubectlCmd:
         cmd = (
             """ "" -c ".*" -A -l supply-chain.apps.tanzu.vmware.com/stage-object-name="""
             + stage_obj
-            + """ --container-state="all" --since=2000h --timestamps=short --color="auto" --no-follow --only-log-lines --template '{{.Message}} {{"\\n"}}' | sort"""
+            + """ --container-state="all" --since=2000h --timestamps --color="auto" --no-follow --only-log-lines --template '{{.Message}} {{"\\n"}}' | sort"""
         )
         # Add [{{color .PodColor .PodName}}] after message to add stage
         _, out, _ = KubectlCmd.stern_run(cmd)
@@ -76,7 +76,7 @@ class KubectlCmd:
         cmd = (
             """ "" -c ".*" -A -l supply-chain.apps.tanzu.vmware.com/resumption-name="""
             + resumption_obj
-            + """ --container-state="all" --since=2000h --timestamps=short --color="auto" --no-follow --only-log-lines --template '{{.Message}} {{"\\n"}}' | sort"""
+            + """ --container-state="all" --since=2000h --timestamps --color="auto" --no-follow --only-log-lines --template '{{.Message}} {{"\\n"}}' | sort"""
         )
         # Add [{{color .PodColor .PodName}}] after message to add stage
         _, out, _ = KubectlCmd.stern_run(cmd)
