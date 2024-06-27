@@ -2,6 +2,7 @@ import emoji
 import os
 import pyperclip
 import yaml
+import re
 from rich.text import Text
 from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
@@ -44,8 +45,26 @@ class RunDetail(Screen):
         self.namespace = namespace
         self.refresh_time_in_sec = 30
 
+    @staticmethod
+    def remove_colorization(text):
+        ansi_escape = re.compile(
+            r"""
+                \x1B   # ESC
+                (?:    # 7-bit C1 Fe (except CSI)
+                    [@-Z\\-_]
+                |      # or [ for CSI, followed by a control sequence
+                    \[
+                    [0-?]*  # Parameter bytes
+                    [ -/]*  # Intermediate bytes
+                    [@-~]   # Final byte
+                )
+            """,
+            re.VERBOSE,
+        )
+        return ansi_escape.sub("", text)
+
     def action_copy_logs(self) -> None:
-        pyperclip.copy(self.logs)
+        pyperclip.copy(self.remove_colorization(self.logs))
 
     def action_goto_stage_list(self):
         tree = self.query_one("#stagesTree")
@@ -136,12 +155,18 @@ class RunDetail(Screen):
                 stage_obj = (
                     self.selected_stage.data.get("status_stage").get("ref").get("name")
                 )
-                self.logs, cmd = KubectlCmd.get_stern_logs_for_stage(stage_obj=stage_obj)
+                self.logs, cmd = KubectlCmd.get_stern_logs_for_stage(
+                    stage_obj=stage_obj
+                )
             else:
                 resumption_obj = (
-                    self.selected_stage.data.get("status_resumption").get("ref").get("name")
+                    self.selected_stage.data.get("status_resumption")
+                    .get("ref")
+                    .get("name")
                 )
-                self.logs, cmd = KubectlCmd.get_stern_logs_for_resumption(resumption_obj=resumption_obj)
+                self.logs, cmd = KubectlCmd.get_stern_logs_for_resumption(
+                    resumption_obj=resumption_obj
+                )
 
             log_viewer.write(Text(self.logs))
         except Exception:
