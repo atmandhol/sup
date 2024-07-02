@@ -32,6 +32,7 @@ class RunDetail(Screen):
         ("s", "goto_stage_list", "Stage List"),
         ("d", "goto_details", "Details"),
         ("l", "goto_logs", "Logs"),
+        ("ctrl+d", "delete_run", "Delete Run"),
     ]
 
     run_details = Reactive(dict())
@@ -62,6 +63,17 @@ class RunDetail(Screen):
             re.VERBOSE,
         )
         return ansi_escape.sub("", text)
+
+    def action_delete_run(self):
+        try:
+            self._delete_run()
+        except Exception as err:
+            self.notify(
+                f"Sup was unable to delete the run from the cluster. Error {err}",
+                title="Delete Error",
+                severity="error",
+                timeout=10,
+            )
 
     def action_copy_logs(self) -> None:
         pyperclip.copy(self.remove_colorization(self.logs))
@@ -123,15 +135,18 @@ class RunDetail(Screen):
         tree: Tree = self.query_one("#stagesTree")
         tree.focus()
 
+    def _delete_run(self):
+        KubectlCmd.delete_run(run=self.run, namespace=self.namespace)
+        self.notify(
+            f"Run {self.run} in namespace {self.namespace} was deleted.",
+            timeout=10,
+        )
+        self.app.pop_screen()
+
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "deleteRunBtn":
             try:
-                KubectlCmd.delete_run(run=self.run, namespace=self.namespace)
-                self.notify(
-                    f"Run {self.run} in namespace {self.namespace} was deleted.",
-                    timeout=10,
-                )
-                self.app.pop_screen()
+                self._delete_run()
             except Exception as err:
                 self.notify(
                     f"Sup was unable to delete the run from the cluster. Error {err}",
