@@ -120,3 +120,16 @@ class KubectlCmd:
     def delete_run(run, namespace):
         process, _, _ = KubectlCmd.run(f"delete {run} -n {namespace}")
         return process.returncode
+
+    @staticmethod
+    def datetime_difference_in_kubernetes_format(start_time, end_time):
+        time_difference = (end_time - start_time).total_seconds()
+
+        minutes = int(time_difference // 60)
+        seconds = int(time_difference % 60)
+
+        if minutes == 0:
+            kubernetes_time_format = f"{seconds}s"
+        else:
+            kubernetes_time_format = f"{minutes}m{seconds}s"
+        return kubernetes_time_format

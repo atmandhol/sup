@@ -3,6 +3,7 @@ import os
 import pyperclip
 import yaml
 import re
+from datetime import datetime
 from rich.text import Text
 from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
@@ -383,6 +384,7 @@ class RunDetail(Screen):
         for run_spec_stage in (
             self.run_details.get("status").get("workloadRun").get("spec").get("stages")
         ):
+            time_taken = ""
             if run_spec_stage.get("resumptions"):
                 rct = 0
                 for r in run_spec_stage.get("resumptions"):
@@ -435,12 +437,20 @@ class RunDetail(Screen):
             ):
                 ej = emoji.emojize(":green_circle: ")
                 status_stage = self.run_details.get("status").get("stages", [])[ct]
+
+                start = datetime.strptime(run_spec_stage.get("pipeline").get("started"), '%Y-%m-%dT%H:%M:%SZ')
+                end = datetime.strptime(run_spec_stage.get("pipeline").get("completed"), '%Y-%m-%dT%H:%M:%SZ')
+                time_taken = KubectlCmd.datetime_difference_in_kubernetes_format(start_time=start, end_time=end)
+
             else:
                 ej = emoji.emojize(":red_circle: ")
                 status_stage = self.run_details.get("status").get("stages", [])[ct]
+                start = datetime.strptime(run_spec_stage.get("pipeline").get("started"), '%Y-%m-%dT%H:%M:%SZ')
+                end = datetime.strptime(run_spec_stage.get("pipeline").get("completed"), '%Y-%m-%dT%H:%M:%SZ')
+                time_taken = KubectlCmd.datetime_difference_in_kubernetes_format(start_time=start, end_time=end)
 
             stages_node.add_leaf(
-                ej + run_spec_stage.get("name"),
+                ej + run_spec_stage.get("name") + (f" ⌛ ({time_taken})" if time_taken else ""),
                 {
                     "run_spec_stage": run_spec_stage,
                     "status_stage": status_stage,
