@@ -199,7 +199,6 @@ class RunDetail(Screen):
     # noinspection PyUnresolvedReferences
     def populate_stage_details(self):
         mkd: MarkdownViewer = self.query_one("#markdownStageDetail")
-        mkd.show_table_of_contents = True
         try:
             if self.selected_stage and not self.selected_stage.data.get("resumption"):
                 path = os.path.dirname(os.path.abspath(__file__)).replace(

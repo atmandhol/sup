@@ -1,6 +1,3 @@
-# Resumption Details
-## %resumption_stage_name
-
 ### Overview
 ```yaml
 name: %resumption_name

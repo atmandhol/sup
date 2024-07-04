@@ -1,6 +1,3 @@
-# Stage Details
-## %component_name
-
 ### Overview
 ```yaml
 namespace: %namespace
