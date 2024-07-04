@@ -1,9 +1,7 @@
-import emoji
 import os
 import pyperclip
 import yaml
 import re
-from datetime import datetime
 from rich.text import Text
 from textual.app import ComposeResult
 from textual.containers import Horizontal
@@ -22,6 +20,8 @@ from textual.widgets import (
 
 from sup.k8s.k8s import KubectlCmd
 from threading import Thread
+
+from sup.widgets.run_details.stage_tree import StageTree
 from sup.widgets.run_details.top_bar import TopBar
 
 
@@ -45,7 +45,8 @@ class RunDetail(Screen):
         self.stage_detail: str = "Select a stage to view the details"
         self.logs: str = "Select a stage to view the logs"
         self.namespace = namespace
-        self.t = TopBar(self.run, self.namespace)
+        self.top_bar = TopBar(self.run, self.namespace)
+        self.stage_tree = StageTree(self.run, self.namespace)
         self.refresh_time_in_sec = 30
 
     @staticmethod
@@ -97,10 +98,9 @@ class RunDetail(Screen):
         log.focus()
 
     def compose(self) -> ComposeResult:
-        yield self.t
+        yield self.top_bar
         with Horizontal():
-            with Static(id="side_bar"):
-                yield Tree("Stages", id="stagesTree")
+            yield self.stage_tree
             with Static(id="data_panel"):
                 with TabbedContent(id="tabbedContentPanel"):
                     with TabPane("Details", id="detailsTab"):
@@ -369,106 +369,6 @@ class RunDetail(Screen):
                 timeout=self.refresh_time_in_sec,
             )
 
-    def populate_stage_tree(self):
-        tree: Tree = self.query_one("#stagesTree")
-        tree.clear()
-        stages_node = tree.root
-        stages_node.expand()
-        ct = 0
-        for run_spec_stage in (
-            self.run_details.get("status").get("workloadRun").get("spec").get("stages")
-        ):
-            time_taken = ""
-            if run_spec_stage.get("resumptions"):
-                rct = 0
-                for r in run_spec_stage.get("resumptions"):
-                    if not r.get("started") and not r.get("completed"):
-                        ej = emoji.emojize(":white_circle: ")
-                        status_resumption = {}
-                    elif r.get("started") and not r.get("completed"):
-                        ej = emoji.emojize(":blue_circle: ")
-                        status_resumption = (
-                            self.run_details.get("status")
-                            .get("stages", [])[ct]
-                            .get("resumptions", [])[rct]
-                        )
-                    elif r.get("passed") and r.get("passed") is True:
-                        ej = emoji.emojize(":green_circle: ")
-                        status_resumption = (
-                            self.run_details.get("status")
-                            .get("stages", [])[ct]
-                            .get("resumptions", [])[rct]
-                        )
-                    else:
-                        ej = emoji.emojize(":red_circle: ")
-                        status_resumption = (
-                            self.run_details.get("status")
-                            .get("stages", [])[ct]
-                            .get("resumptions", [])[rct]
-                        )
-
-                    stages_node.add_leaf(
-                        ej + "⏰ " + r.get("name"),
-                        {
-                            "run_spec_resumption": r,
-                            "resumption": True,
-                            "status_resumption": status_resumption,
-                        },
-                    )
-                    rct += 1
-
-            if not run_spec_stage.get("pipeline"):
-                ej = emoji.emojize(":white_circle: ")
-                status_stage = {}
-            elif run_spec_stage.get("pipeline").get(
-                "started"
-            ) and not run_spec_stage.get("pipeline").get("completed"):
-                ej = emoji.emojize(":blue_circle: ")
-                status_stage = self.run_details.get("status").get("stages", [])[ct]
-            elif (
-                run_spec_stage.get("pipeline").get("passed")
-                and run_spec_stage.get("pipeline").get("passed") is True
-            ):
-                ej = emoji.emojize(":green_circle: ")
-                status_stage = self.run_details.get("status").get("stages", [])[ct]
-
-                start = datetime.strptime(
-                    run_spec_stage.get("pipeline").get("started"), "%Y-%m-%dT%H:%M:%SZ"
-                )
-                end = datetime.strptime(
-                    run_spec_stage.get("pipeline").get("completed"),
-                    "%Y-%m-%dT%H:%M:%SZ",
-                )
-                time_taken = KubectlCmd.datetime_difference_in_kubernetes_format(
-                    start_time=start, end_time=end
-                )
-
-            else:
-                ej = emoji.emojize(":red_circle: ")
-                status_stage = self.run_details.get("status").get("stages", [])[ct]
-                start = datetime.strptime(
-                    run_spec_stage.get("pipeline").get("started"), "%Y-%m-%dT%H:%M:%SZ"
-                )
-                end = datetime.strptime(
-                    run_spec_stage.get("pipeline").get("completed"),
-                    "%Y-%m-%dT%H:%M:%SZ",
-                )
-                time_taken = KubectlCmd.datetime_difference_in_kubernetes_format(
-                    start_time=start, end_time=end
-                )
-
-            stages_node.add_leaf(
-                ej
-                + run_spec_stage.get("name")
-                + (f" ⌛ ({time_taken})" if time_taken else ""),
-                {
-                    "run_spec_stage": run_spec_stage,
-                    "status_stage": status_stage,
-                    "resumption": False,
-                },
-            )
-            ct += 1
-
     def _update_run_details_handler(self):
         try:
             self.run_details = KubectlCmd.get_run_detail(self.run, self.namespace)
@@ -485,7 +385,7 @@ class RunDetail(Screen):
         t.run()
 
     def watch_run_details(self):
-        self.populate_stage_tree()
-        self.t.populate(self.run_details)
+        self.stage_tree.populate(self.run_details)
+        self.top_bar.populate(self.run_details)
         if self.selected_stage:
             self.populate_stage_details()

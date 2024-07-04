@@ -1,15 +1,12 @@
 from rich.text import Text
 from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
-from textual.reactive import Reactive
 
 from textual.widgets import Static, Label, Button
 
 
 class TopBar(Static):
     """Run list"""
-
-    run_details = Reactive(dict())
 
     def __init__(self, run, namespace):
         super().__init__(id="top_bar")
