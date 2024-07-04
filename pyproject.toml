@@ -9,7 +9,7 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.10"
 kubernetes = "^29.0.0"
-textual = "^0.58.0"
+textual = "^0.70.0"
 rich = "^13.7.1"
 emoji = "^2.11.1"
 pyperclip = "^1.8.2"

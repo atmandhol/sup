@@ -35,9 +35,10 @@ class RunList(Static):
         self.start = time.time()
 
     BINDINGS = [
-        Binding("ctrl+c", "app.quit", "Quit"),
-        Binding("s", "search_run", "Search Run"),
+        Binding("q", "app.quit", "Quit"),
+        Binding("/", "search_run", "Search Run"),
         Binding("escape", "clear_filter", "Clear Filter"),
+        Binding(":", "select_chain_status", "Select Chain/Status"),
     ]
 
     def action_search_run(self):
@@ -46,8 +47,20 @@ class RunList(Static):
 
     def action_clear_filter(self):
         search_bar = self.query_one("#filterInput")
+        if search_bar.value == "" and search_bar.has_focus:
+            table = self.query_one("#runDataTable")
+            table.focus()
+            return
         search_bar.value = ""
         search_bar.focus()
+
+    def action_select_chain_status(self):
+        select = self.query_one("#chainSelect")
+        if not select.has_focus:
+            select.focus()
+            return
+        select = self.query_one("#statusSelect")
+        select.focus()
 
     def compose(self) -> ComposeResult:
         with Static(id="top_bar"):
@@ -103,6 +116,9 @@ class RunList(Static):
 
     @on(Select.Changed)
     def select_changed(self, event: Select.Changed) -> None:
+        search = self.query_one(Input)
+        search.focus()
+
         if event.select.id == "chainSelect":
             self.selected_chain = str(event.value)
         elif event.select.id == "statusSelect":
