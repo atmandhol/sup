@@ -383,33 +383,6 @@ class RunDetail(Screen):
         for run_spec_stage in (
             self.run_details.get("status").get("workloadRun").get("spec").get("stages")
         ):
-            if not run_spec_stage.get("pipeline"):
-                ej = emoji.emojize(":white_circle: ")
-                status_stage = {}
-            elif run_spec_stage.get("pipeline").get(
-                "started"
-            ) and not run_spec_stage.get("pipeline").get("completed"):
-                ej = emoji.emojize(":blue_circle: ")
-                status_stage = self.run_details.get("status").get("stages", [])[ct]
-            elif (
-                run_spec_stage.get("pipeline").get("passed")
-                and run_spec_stage.get("pipeline").get("passed") is True
-            ):
-                ej = emoji.emojize(":green_circle: ")
-                status_stage = self.run_details.get("status").get("stages", [])[ct]
-            else:
-                ej = emoji.emojize(":red_circle: ")
-                status_stage = self.run_details.get("status").get("stages", [])[ct]
-
-            stg_node = stages_node.add_leaf(
-                ej + run_spec_stage.get("name"),
-                {
-                    "run_spec_stage": run_spec_stage,
-                    "status_stage": status_stage,
-                    "resumption": False,
-                },
-            )
-
             if run_spec_stage.get("resumptions"):
                 rct = 0
                 for r in run_spec_stage.get("resumptions"):
@@ -438,16 +411,42 @@ class RunDetail(Screen):
                             .get("resumptions", [])[rct]
                         )
 
-                    stg_node.add_leaf(
-                        ej + r.get("name"),
+                    stages_node.add_leaf(
+                        ej + "⏰ " + r.get("name"),
                         {
                             "run_spec_resumption": r,
                             "resumption": True,
                             "status_resumption": status_resumption,
                         },
                     )
-                    stg_node.expand_all()
                     rct += 1
+
+            if not run_spec_stage.get("pipeline"):
+                ej = emoji.emojize(":white_circle: ")
+                status_stage = {}
+            elif run_spec_stage.get("pipeline").get(
+                "started"
+            ) and not run_spec_stage.get("pipeline").get("completed"):
+                ej = emoji.emojize(":blue_circle: ")
+                status_stage = self.run_details.get("status").get("stages", [])[ct]
+            elif (
+                run_spec_stage.get("pipeline").get("passed")
+                and run_spec_stage.get("pipeline").get("passed") is True
+            ):
+                ej = emoji.emojize(":green_circle: ")
+                status_stage = self.run_details.get("status").get("stages", [])[ct]
+            else:
+                ej = emoji.emojize(":red_circle: ")
+                status_stage = self.run_details.get("status").get("stages", [])[ct]
+
+            stages_node.add_leaf(
+                ej + run_spec_stage.get("name"),
+                {
+                    "run_spec_stage": run_spec_stage,
+                    "status_stage": status_stage,
+                    "resumption": False,
+                },
+            )
             ct += 1
 
     def populate_top_bar(self):
