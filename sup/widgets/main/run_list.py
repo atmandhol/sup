@@ -183,6 +183,7 @@ class RunList(Static):
         table = self.query_one(DataTable)
         current_pos = table.cursor_row
         y_pos = table.scroll_y
+        table.visible = False
         table.clear()
         for run in self.run_data:
             if self.filter_string and self.filter_string not in (
@@ -327,3 +328,4 @@ class RunList(Static):
             table.add_row(*styled_row)
             table.move_cursor(row=current_pos)
             table.scroll_target_y = y_pos
+        table.visible = True
