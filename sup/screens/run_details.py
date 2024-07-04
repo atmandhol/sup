@@ -23,6 +23,7 @@ from textual.widgets import (
 
 from sup.k8s.k8s import KubectlCmd
 from threading import Thread
+from sup.widgets.top_bar import TopBar
 
 
 # noinspection PyTypeChecker,PyBroadException
@@ -45,6 +46,7 @@ class RunDetail(Screen):
         self.stage_detail: str = "Select a stage to view the details"
         self.logs: str = "Select a stage to view the logs"
         self.namespace = namespace
+        self.t = TopBar(self.run, self.namespace)
         self.refresh_time_in_sec = 30
 
     @staticmethod
@@ -96,14 +98,7 @@ class RunDetail(Screen):
         log.focus()
 
     def compose(self) -> ComposeResult:
-        with Static(id="top_bar"):
-            with Horizontal():
-                with Vertical():
-                    yield Label("Run: ", id="runLabel")
-                    yield Label("Message: ", id="messageLabel")
-                    yield Label("Status: ", id="statusLabel")
-                    yield Label("Cause: ", id="causeLabel")
-                yield Button.warning("Delete Run", id="deleteRunBtn")
+        yield self.t
         with Horizontal():
             with Static(id="side_bar"):
                 yield Tree("Stages", id="stagesTree")
@@ -438,19 +433,35 @@ class RunDetail(Screen):
                 ej = emoji.emojize(":green_circle: ")
                 status_stage = self.run_details.get("status").get("stages", [])[ct]
 
-                start = datetime.strptime(run_spec_stage.get("pipeline").get("started"), '%Y-%m-%dT%H:%M:%SZ')
-                end = datetime.strptime(run_spec_stage.get("pipeline").get("completed"), '%Y-%m-%dT%H:%M:%SZ')
-                time_taken = KubectlCmd.datetime_difference_in_kubernetes_format(start_time=start, end_time=end)
+                start = datetime.strptime(
+                    run_spec_stage.get("pipeline").get("started"), "%Y-%m-%dT%H:%M:%SZ"
+                )
+                end = datetime.strptime(
+                    run_spec_stage.get("pipeline").get("completed"),
+                    "%Y-%m-%dT%H:%M:%SZ",
+                )
+                time_taken = KubectlCmd.datetime_difference_in_kubernetes_format(
+                    start_time=start, end_time=end
+                )
 
             else:
                 ej = emoji.emojize(":red_circle: ")
                 status_stage = self.run_details.get("status").get("stages", [])[ct]
-                start = datetime.strptime(run_spec_stage.get("pipeline").get("started"), '%Y-%m-%dT%H:%M:%SZ')
-                end = datetime.strptime(run_spec_stage.get("pipeline").get("completed"), '%Y-%m-%dT%H:%M:%SZ')
-                time_taken = KubectlCmd.datetime_difference_in_kubernetes_format(start_time=start, end_time=end)
+                start = datetime.strptime(
+                    run_spec_stage.get("pipeline").get("started"), "%Y-%m-%dT%H:%M:%SZ"
+                )
+                end = datetime.strptime(
+                    run_spec_stage.get("pipeline").get("completed"),
+                    "%Y-%m-%dT%H:%M:%SZ",
+                )
+                time_taken = KubectlCmd.datetime_difference_in_kubernetes_format(
+                    start_time=start, end_time=end
+                )
 
             stages_node.add_leaf(
-                ej + run_spec_stage.get("name") + (f" ⌛ ({time_taken})" if time_taken else ""),
+                ej
+                + run_spec_stage.get("name")
+                + (f" ⌛ ({time_taken})" if time_taken else ""),
                 {
                     "run_spec_stage": run_spec_stage,
                     "status_stage": status_stage,
@@ -459,66 +470,12 @@ class RunDetail(Screen):
             )
             ct += 1
 
-    def populate_top_bar(self):
-        self.query_one("#runLabel").renderable = (
-            Text("Run: ", style="#f59145")
-            + Text(f"{self.run}", style="bold #ffffff")
-            + " in "
-            + Text(f"{self.namespace}", style="bold #ffffff")
-            + " namespace"
-        )
-
-        msg = str(
-            self.run_details.get("status")
-            .get("conditions")[1]
-            .get("message")
-            .split(".")[0]
-        )
-        if not msg:
-            msg = "Nothing to show here."
-        self.query_one("#messageLabel").renderable = Text(
-            "Message: ", style="#f59145"
-        ) + Text(
-            f"{msg}",
-            style="bold #ffffff",
-        )
-
-        ready = str(self.run_details.get("status").get("conditions")[1].get("reason"))
-        self.query_one("#statusLabel").renderable = Text("Status: ", style="#f59145")
-        if ready == "Succeeded":
-            self.query_one("#statusLabel").renderable += Text(
-                ready,
-                style="bold #03AC13",
-            )
-        elif ready == "Failed":
-            self.query_one("#statusLabel").renderable += Text(
-                ready,
-                style="bold #d1573f",
-            )
-        elif ready == "PlatformFailed":
-            self.query_one("#statusLabel").renderable += Text(
-                ready,
-                style="bold #fc9847",
-            )
-        else:
-            self.query_one("#statusLabel").renderable += Text(
-                ready,
-                style="bold #3f9bd1",
-            )
-
-        self.query_one("#causeLabel").renderable = Text(
-            "Cause: ", style="#f59145"
-        ) + Text(
-            f'{self.run_details.get("spec").get("cause").get("message")}',
-            style="bold #ffffff",
-        )
-
     def _update_run_details_handler(self):
         try:
             self.run_details = KubectlCmd.get_run_detail(self.run, self.namespace)
-        except Exception:
+        except Exception as err:
             self.notify(
-                "Sup was unable to get Run details from the cluster. Make sure the cluster is accessible and the kubeconfig is valid.",
+                f"Sup was unable to get Run details from the cluster. Make sure the cluster is accessible and the kubeconfig is valid. Error: {err}",
                 title="Refresh Error",
                 severity="error",
                 timeout=self.refresh_time_in_sec,
@@ -530,6 +487,6 @@ class RunDetail(Screen):
 
     def watch_run_details(self):
         self.populate_stage_tree()
-        self.populate_top_bar()
+        self.t.populate(self.run_details)
         if self.selected_stage:
             self.populate_stage_details()
