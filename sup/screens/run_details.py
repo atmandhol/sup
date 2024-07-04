@@ -6,14 +6,13 @@ import re
 from datetime import datetime
 from rich.text import Text
 from textual.app import ComposeResult
-from textual.containers import Horizontal, Vertical
+from textual.containers import Horizontal
 from textual.reactive import Reactive
 from textual.screen import Screen
 from textual.widgets import (
     Footer,
     Static,
     Tree,
-    Label,
     TabbedContent,
     TabPane,
     MarkdownViewer,
@@ -23,7 +22,7 @@ from textual.widgets import (
 
 from sup.k8s.k8s import KubectlCmd
 from threading import Thread
-from sup.widgets.top_bar import TopBar
+from sup.widgets.run_details.top_bar import TopBar
 
 
 # noinspection PyTypeChecker,PyBroadException

@@ -1,7 +1,7 @@
 from textual.app import App, ComposeResult
 from textual.widgets import Footer
 
-from ..widgets.run_list import RunList
+from sup.widgets.main.run_list import RunList
 
 
 # noinspection PyTypeChecker
