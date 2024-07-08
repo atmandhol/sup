@@ -2,6 +2,20 @@
 `sup` is an interactive CLI for Tanzu Supply chains.
 
 ## Getting Started
+
+### Usage
+- Make sure your kubeconfig is pointing to the cluster you want to run `sup` against. Run `sup` to launch the home page:
+![sup](images/home.png)
+
+- The footer bar in the bottom show you all the options on a particular screen.
+
+- Hit enter on any one of the runs to see the details page:
+![sup](images/details.png)
+
+- Press `L` to see the logs of any stage:
+![sup](images/logs.png)
+
+
 ### Install sup
 #### Prerequisites
 - Install the latest Python 3.12.x or later from [python.org](https://www.python.org/downloads/)
