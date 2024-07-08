@@ -48,6 +48,18 @@ class StageTree(Static):
                             .get("stages", [])[ct]
                             .get("resumptions", [])[rct]
                         )
+                        start = datetime.strptime(
+                            r.get("started"), "%Y-%m-%dT%H:%M:%SZ"
+                        )
+                        end = datetime.strptime(
+                            r.get("completed"),
+                            "%Y-%m-%dT%H:%M:%SZ",
+                        )
+                        time_taken = (
+                            KubectlCmd.datetime_difference_in_kubernetes_format(
+                                start_time=start, end_time=end
+                            )
+                        )
                     else:
                         ej = emoji.emojize(":red_circle: ")
                         status_resumption = (
@@ -55,9 +67,24 @@ class StageTree(Static):
                             .get("stages", [])[ct]
                             .get("resumptions", [])[rct]
                         )
+                        start = datetime.strptime(
+                            r.get("started"), "%Y-%m-%dT%H:%M:%SZ"
+                        )
+                        end = datetime.strptime(
+                            r.get("completed"),
+                            "%Y-%m-%dT%H:%M:%SZ",
+                        )
+                        time_taken = (
+                            KubectlCmd.datetime_difference_in_kubernetes_format(
+                                start_time=start, end_time=end
+                            )
+                        )
 
                     stages_node.add_leaf(
-                        ej + "⏰ " + r.get("name"),
+                        ej
+                        + "⏰ "
+                        + r.get("name")
+                        + (f" ⌛ ({time_taken})" if time_taken else ""),
                         {
                             "run_spec_resumption": r,
                             "resumption": True,

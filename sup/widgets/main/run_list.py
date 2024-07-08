@@ -39,6 +39,7 @@ class RunList(Static):
         Binding("/", "search_run", "Search Run"),
         Binding("escape", "clear_filter", "Clear Filter"),
         Binding(":", "select_chain_status", "Select Chain/Status"),
+        Binding("ctrl+R", "reload", "Reload Data"),
     ]
 
     def action_search_run(self):
@@ -61,6 +62,9 @@ class RunList(Static):
             return
         select = self.query_one("#statusSelect")
         select.focus()
+
+    def action_reload(self):
+        self.update_data()
 
     def compose(self) -> ComposeResult:
         with Static(id="top_bar"):
