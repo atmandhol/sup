@@ -3,18 +3,23 @@
 
 ## Getting Started
 
-### Usage
-- Make sure your kubeconfig is pointing to the cluster you want to run `sup` against. Run `sup` to launch the home page:
+### See all latest runs
+Make sure your kubeconfig is pointing to the cluster you want to run `sup` against. Run `sup` to launch the home page:
+
 ![sup](images/home.png)
 
+- Use the `:` to switch focus to supply chain and status selector for filtering by chain and status.
 - The footer bar in the bottom show you all the options on a particular screen.
 
-- Hit enter on any one of the runs to see the details page:
+### Run Details
+Hit enter on any one of the runs to see the details page:
+
 ![sup](images/details.png)
 
-- Press `L` to see the logs of any stage:
-![sup](images/logs.png)
+### Logs for stages
+Press `L` to see the logs of any stage:
 
+![sup](images/logs.png)
 
 ### Install sup
 #### Prerequisites
