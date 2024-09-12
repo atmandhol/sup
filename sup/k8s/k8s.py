@@ -63,7 +63,7 @@ class KubectlCmd:
     @staticmethod
     def get_stern_logs_for_stage(stage_obj):
         cmd = (
-            """ "" -c ".*" -A -l supply-chain.apps.tanzu.vmware.com/stage-object-name="""
+            """ "" -c ".*" -A -l supply-chain.tanzu.vmware.com/stage-object-name="""
             + stage_obj
             + """ --container-state="all" --since=2000h --timestamps --color="auto" --no-follow --only-log-lines --template '{{.Message}} {{"\\n"}}' | sort"""
         )
@@ -74,7 +74,7 @@ class KubectlCmd:
     @staticmethod
     def get_stern_logs_for_resumption(resumption_obj):
         cmd = (
-            """ "" -c ".*" -A -l supply-chain.apps.tanzu.vmware.com/resumption-name="""
+            """ "" -c ".*" -A -l supply-chain.tanzu.vmware.com/resumption-name="""
             + resumption_obj
             + """ --container-state="all" --since=2000h --timestamps --color="auto" --no-follow --only-log-lines --template '{{.Message}} {{"\\n"}}' | sort"""
         )
@@ -84,18 +84,18 @@ class KubectlCmd:
 
     @staticmethod
     def is_latest(run, run_list):
-        workload = (
+        workflow = (
             run.get("metadata")
             .get("labels")
-            .get("supply-chain.apps.tanzu.vmware.com/workload-name")
+            .get("supply-chain.tanzu.vmware.com/workflow-name")
         )
         created_at_timestamp = run.get("metadata").get("creationTimestamp")
         for r in run_list:
             if (
                 r.get("metadata")
                 .get("labels")
-                .get("supply-chain.apps.tanzu.vmware.com/workload-name")
-                != workload
+                .get("supply-chain.tanzu.vmware.com/workflow-name")
+                != workflow
             ):
                 continue
             if r.get("metadata").get("creationTimestamp") > created_at_timestamp:
@@ -107,7 +107,7 @@ class KubectlCmd:
         chain = (
             run.get("metadata")
             .get("labels")
-            .get("supply-chain.apps.tanzu.vmware.com/workload-kind")
+            .get("supply-chain.tanzu.vmware.com/workflow-kind")
         )
         return chain.lower() == filter_chain.lower()
 

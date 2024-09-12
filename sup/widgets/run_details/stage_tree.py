@@ -25,7 +25,7 @@ class StageTree(Static):
         stages_node.expand()
         ct = 0
         for run_spec_stage in (
-            run_details.get("status").get("workloadRun").get("spec").get("stages")
+            run_details.get("status").get("workflowRun").get("spec").get("stages")
         ):
             time_taken = ""
             if run_spec_stage.get("resumptions"):

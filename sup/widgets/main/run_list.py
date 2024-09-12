@@ -194,7 +194,7 @@ class RunList(Static):
                 str(
                     run.get("metadata")
                     .get("labels")
-                    .get("supply-chain.apps.tanzu.vmware.com/workload-name")
+                    .get("supply-chain.tanzu.vmware.com/workflow-name")
                 )
                 + "/"
                 + str(run.get("metadata").get("name"))
@@ -217,7 +217,7 @@ class RunList(Static):
                     str(
                         run.get("metadata")
                         .get("labels")
-                        .get("supply-chain.apps.tanzu.vmware.com/workload-kind")
+                        .get("supply-chain.tanzu.vmware.com/workflow-kind")
                     ),
                     style="italic #ffffff",
                 )
@@ -229,7 +229,7 @@ class RunList(Static):
                     str(
                         run.get("metadata")
                         .get("labels")
-                        .get("supply-chain.apps.tanzu.vmware.com/workload-name")
+                        .get("supply-chain.tanzu.vmware.com/workflow-name")
                     ),
                     style="#dbce0d",
                 )
@@ -286,7 +286,7 @@ class RunList(Static):
             # Progress
             progress_line = Text(str(""))
 
-            for stage in run.get("status").get("workloadRun").get("spec").get("stages"):
+            for stage in run.get("status").get("workflowRun").get("spec").get("stages"):
                 for resumption in stage.get("resumptions", []):
                     if (
                         resumption.get("passed", None)
